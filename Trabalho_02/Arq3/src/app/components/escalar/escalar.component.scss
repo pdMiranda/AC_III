@@ -1,0 +1,41 @@
+mat-divider{
+    margin: 25px;
+
+}
+
+.btn {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.btn > button {
+    width: 80%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: green;
+    color: white;
+    font-size: 20px;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.scrollable-table {
+    max-height: 400px;
+    overflow-y: auto;
+    display: block;
+  }
+
+  
+
+  .result {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}

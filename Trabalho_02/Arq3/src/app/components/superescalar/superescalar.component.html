@@ -1,0 +1,73 @@
+<table mat-table [dataSource]="pipelineHistory" class="mat-elevation-z8 scrollable-table my-table">
+
+  <ng-container matColumnDef="#">
+    <th mat-header-cell *matHeaderCellDef>#</th>
+    <td mat-cell *matCellDef="let id; let i = index">{{i}}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="ID">
+    <th mat-header-cell *matHeaderCellDef>ID</th>
+    <td mat-cell *matCellDef="let instructions">
+      <div *ngFor="let instruction of instructions.ID" [style.background-color]="instruction.backgroundColor">
+        {{instruction.toString()}}
+      </div>
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="JANELA">
+    <th mat-header-cell *matHeaderCellDef>JANELA</th>
+    <td mat-cell *matCellDef="let instructions">
+      <div *ngFor="let instruction of instructions.JANELA" [style.background-color]="instruction.backgroundColor"
+        [ngClass]="{'blocked': instruction.isBlocked}">
+        {{instruction.toString()}}
+      </div>
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="EX">
+    <th mat-header-cell *matHeaderCellDef>EX</th>
+    <td mat-cell *matCellDef="let instructions">
+      <div *ngFor="let unit of instructions.EX">
+        <h3>{{unit.name}}</h3>
+        <div *ngFor="let instruction of unit.instructions" [style.background-color]="instruction.backgroundColor">
+          {{instruction.toString()}}
+        </div>
+      </div>
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="WB">
+    <th mat-header-cell *matHeaderCellDef>WB</th>
+    <td mat-cell *matCellDef="let instructions">
+      <div *ngFor="let instruction of instructions.WB" [style.background-color]="instruction.backgroundColor">
+        {{instruction.toString()}}
+      </div>
+    </td>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+</table>
+
+<div class="btn">
+  <button *ngIf="step === 1" mat-raised-button color="primary" (click)="saveThreads(); step = 2;">Gerar Threads</button>
+  <input type="file" #fileInput style="display: none" (change)="loadThreads($event)">
+  <button *ngIf="step === 2" mat-raised-button color="primary" (click)="fileInput.click(); step = 3">Carregar Threads</button>
+  <button *ngIf="step === 3" mat-raised-button color="primary" (click)="start(); step = 4;">Simular</button>
+</div>
+
+<mat-divider></mat-divider>
+
+<table mat-table [dataSource]="dataSource2" class="mat-elevation-z8 result">
+  <ng-container matColumnDef="name">
+    <th mat-header-cell *matHeaderCellDef>Métricas</th>
+    <td mat-cell *matCellDef="let result">{{ result.name }}</td>
+  </ng-container>
+  <ng-container matColumnDef="result">
+    <th mat-header-cell *matHeaderCellDef>Resultado</th>
+    <td mat-cell *matCellDef="let result">{{ +result.result.toFixed(2) }}</td>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns2"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns2"></tr>
+</table>

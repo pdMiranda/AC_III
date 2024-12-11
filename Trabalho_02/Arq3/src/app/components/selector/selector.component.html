@@ -1,0 +1,22 @@
+<div class="container">
+  <mat-form-field appearance="fill">
+    <mat-label>Arquitetura</mat-label>
+    <mat-select
+      [(value)]="arquitetura"
+      (selectionChange)="onSelectArquitetura($event.value)"
+    >
+      <mat-option *ngFor="let opcao of selecionaArquitetura" [value]="opcao">
+        {{ opcao }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill" *ngIf="arquitetura">
+    <mat-label>Técnica Multithreading</mat-label>
+    <mat-select [(value)]="tipo" (selectionChange)="onSelectTipo($event.value)">
+      <mat-option *ngFor="let opcao of opcaoSelecionada" [value]="opcao">
+        {{ opcao }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+</div>
