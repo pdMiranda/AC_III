@@ -10,8 +10,6 @@ Equipe de desenvolvedores do projeto:
     Pedro Miranda Rodrigues
     Vinícius Simões Viana
 
-
-
 execução do projeto 
 
 [angular necessário] - npm install -g @angular/cli
