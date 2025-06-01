@@ -1,8 +1,12 @@
 ## Simulador de Tomasulo
-Para executar em seu ambiente local, basta executar o arquivo index.html.
 
-Ao abrir basta selecionar um exemplo ou insetir manualmente as instruções e em seguida clicar em simular.
-Assim que você clicar em simular basta clicar no botão PROXÍMO que ele ira executar as operações passo a passo.
+Simulador desenvolvido para demonstração do algoritmo de Tomasulo, 
+demonstrando o funcionamento de arquiteturas superescalares com execução fora de ordem, 
+buffer de reordenamento e especulação de desvios.
+
+## Execução: 
+
+No VSCode, baixe a extensão Live Server e rode por ela o index.html
 
 ### Desenvolvido por:
 
