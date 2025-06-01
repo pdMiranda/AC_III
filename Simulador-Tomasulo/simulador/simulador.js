@@ -164,7 +164,7 @@
             if (UFParaUsar) {
                 // Se BEQ ou BNEZ, inicia especulação (sempre prevê "não desvia" para exemplo)
                 if ((novaInstrucao.instrucao.operacao === 'BEQ' || novaInstrucao.instrucao.operacao === 'BNEZ') && !this.isSpeculating()) {
-                    this.startBranchSpeculation(novaInstrucao.posicao, false); // false = prevê "não desvia"
+                    this.startBranchSpeculation(novaInstrucao.posicao, true); // true = prevê desvia
                     novaInstrucao.especulativa = false; // o próprio desvio não é especulativo
                 } else if (this.isSpeculating()) {
                     novaInstrucao.especulativa = true; // instruções após o desvio são especulativas
@@ -1063,6 +1063,39 @@ function gerarTabelaEspeculacao(diagrama) {
     $("#tabelaEspeculacao").html(s);
 }
 
+function gerarTabelaMetricas(diagrama) {
+    // Total de ciclos
+    const ciclosTotais = diagrama.clock;
+
+    // Total de instruções realmente completadas (não especulativas descartadas)
+    const instrucoesCompletas = diagrama.estadoInstrucoes.filter(i => i.write !== null).length;
+
+    // IPC (Instruções por ciclo)
+    const ipc = (ciclosTotais > 0) ? (instrucoesCompletas / ciclosTotais).toFixed(3) : "-";
+
+    // Ciclos de bolha: ciclos em que nenhuma instrução foi emitida (simples: ciclos - instruções emitidas)
+    const ciclosDeBolha = ciclosTotais - instrucoesCompletas;
+
+    let s = `
+        <h3>Métricas de Desempenho</h3>
+        <table class="table table-striped table-hover">
+            <tr>
+                <th>IPC</th>
+                <th>Ciclos Totais</th>
+                <th>Instruções Completas</th>
+                <th>Ciclos de Bolha</th>
+            </tr>
+            <tr>
+                <td>${ipc}</td>
+                <td>${ciclosTotais}</td>
+                <td>${instrucoesCompletas}</td>
+                <td>${ciclosDeBolha}</td>
+            </tr>
+        </table>
+    `;
+    $("#tabelaMetricas").html(s);
+}
+
 function atualizaTabelaEstadoUFMemHTML(ufsMem) {
     for(let key in ufsMem) {
         const ufMem = ufsMem[key];
@@ -1210,6 +1243,7 @@ function limparCampos() {
      atualizaTabelaBufferReordenamentoHTML(diagrama["ufMem"]);
      terminou = false;
      $("#clock").html("Clock: 0");
+     $("#tabelaMetricas").html("");
      $('#configuracoesview').hide('slow');
      $('#simuladorview').show('slow');
  }
@@ -1235,6 +1269,9 @@ function proximoFunctionN() {
     atualizaClock(diagrama.clock);
     atualizaStatusEspeculacao(diagrama);
     gerarTabelaEspeculacao(diagrama);
+    if (terminou) {
+        gerarTabelaMetricas(diagrama);
+    }
 }
 
 function resultadobtn() {
@@ -1249,6 +1286,9 @@ function resultadobtn() {
         atualizaClock(diagrama.clock);
         atualizaStatusEspeculacao(diagrama);
         gerarTabelaEspeculacao(diagrama); 
+    }
+    if (terminou) {
+        gerarTabelaMetricas(diagrama);
     }
 }
 
