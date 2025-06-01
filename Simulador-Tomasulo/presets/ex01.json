@@ -1,0 +1,57 @@
+{
+    "config": {
+        "ciclos": {
+            "ciclosInt": 1,
+            "ciclosLoad": 2,
+            "ciclosStore": 2,
+            "ciclosFPAdd": 2,
+            "ciclosFPMul": 10,
+            "ciclosFPDiv": 40
+        },
+        "unidades": {
+            "fuLoad": 6,
+            "fuStore": 3,
+            "fuInt": 3,
+            "fuFPAdd": 3,
+            "fuFPMul": 2
+        }
+    },
+    "insts": [
+        {
+            "D": "LD",
+            "R": "F6",
+            "S": "34",
+            "T": "R1"
+        },
+        {
+            "D": "LD",
+            "R": "F2",
+            "S": "45",
+            "T": "R3"
+        },
+        {
+            "D": "MULTD",
+            "R": "F0",
+            "S": "F2",
+            "T": "F4"
+        },
+        {
+            "D": "SUBD",
+            "R": "F8",
+            "S": "F6",
+            "T": "F2"
+        },
+        {
+            "D": "DIVD",
+            "R": "F10",
+            "S": "F0",
+            "T": "F6"
+        },
+        {
+            "D": "ADDD",
+            "R": "F6",
+            "S": "F8",
+            "T": "F2"
+        }
+    ]
+}

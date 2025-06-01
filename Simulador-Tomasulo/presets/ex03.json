@@ -1,0 +1,68 @@
+{
+    "config": {
+        "ciclos": {
+            "ciclosInt": 3,
+            "ciclosFPAdd": 8,
+            "ciclosFPMul": 10,
+            "ciclosFPDiv": 15
+        },
+        "unidades": {
+            "fuLoad": 6,
+            "fuStore": 3,
+            "fuInt": 3,
+            "fuFPAdd": 3,
+            "fuFPMul": 2
+        }
+    },
+
+    "insts": [
+        {
+            "D": "ADD",
+            "R": "R2",
+            "S": "R0",
+            "T": "R1"
+        },
+        {
+            "D": "LD",
+            "R": "F2",
+            "S": "0",
+            "T": "R2"
+        },
+        {
+            "D": "MULTD",
+            "R": "F0",
+            "S": "F2",
+            "T": "F2"
+        },
+        {
+            "D": "SUBD",
+            "R": "F0",
+            "S": "F4",
+            "T": "F2"
+        },
+        {
+            "D": "DIVD",
+            "R": "F10",
+            "S": "F4",
+            "T": "F6"
+        },
+        {
+            "D": "ADDD",
+            "R": "F6",
+            "S": "F4",
+            "T": "F2"
+        },
+        {
+            "D": "SD",
+            "R": "F6",
+            "S": "0",
+            "T": "R2"
+        },
+        {
+            "D": "BEQ",
+            "R": "R2",
+            "S": "R4",
+            "T": "ini"
+        }
+    ]
+}

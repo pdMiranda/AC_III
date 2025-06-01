@@ -1,0 +1,197 @@
+<div class="card" style="box-shadow: 0px 0px 20px rgba(133,135,150,0.54);">
+    <div class="card-header">
+        <h4>Configurar Execução</h4>
+    </div>
+    <div class="card-body">
+        <div class="accordion" role="tablist" id="accordion-1">
+            <div class="accordion-item">
+                <h2 class="accordion-header" role="tab">
+                    <button class="accordion-button" data-bs-toggle="collapse"
+                            data-bs-target="#accordion-1 .item-1" aria-expanded="true"
+                            aria-controls="accordion-1 .item-1">Clique aqui para importar uma configuração
+                    </button>
+                </h2>
+                <div class="accordion-collapse collapse show item-1" role="tabpanel"
+                     data-bs-parent="#accordion-1">
+                    <div class="accordion-body">
+                        <p class="mb-0"></p>
+                        <div>
+                            <ul class="nav nav-tabs" role="tablist" style="border-color: var(--bs-blue);">
+                                <li class="nav-item" role="presentation"><a class="nav-link active"
+                                                                            role="tab" data-bs-toggle="tab"
+                                                                            href="#tab-1"
+                                                                            style="border-color: var(--bs-blue);"><i
+                                        class="fa fa-star"></i>&nbsp;Exemplos</a></li>
+                                <li class="nav-item" role="presentation"><a class="nav-link" role="tab"
+                                                                            data-bs-toggle="tab"
+                                                                            href="#tab-2"><i
+                                        class="fa fa-cloud-upload"></i>&nbsp;Enviar Arquivo</a></li>
+
+                            </ul>
+                            <div class="tab-content">
+                                <div class="tab-pane active" role="tabpanel" id="tab-1">
+                                    <p style="border-color: var(--bs-blue);">
+                                        <button class="btn btn-primary rounded-pill" type="button"
+                                                onclick="carregaExemplo('00')" style="margin: 13px;">Exemplo 1
+                                        </button>
+                                        <button class="btn btn-primary rounded-pill" type="button"
+                                                onclick="carregaExemplo('01')" style="margin: 13px;">Exemplo 2
+                                        </button>
+                                        <button class="btn btn-primary rounded-pill" type="button"
+                                                onclick="carregaExemplo('02')" style="margin: 13px;">Exemplo 3
+                                        </button>
+                                        <button class="btn btn-primary rounded-pill" type="button"
+                                                onclick="carregaExemplo('03')" style="margin: 13px;">Exemplo 4
+                                        </button>
+                                        <button class="btn btn-primary rounded-pill" type="button"
+                                                onclick="carregaExemplo('04')" style="margin: 13px;">Exemplo 5
+                                        </button>
+                                        <button class="btn btn-primary rounded-pill" type="button"
+                                                onclick="carregaExemplo('05')" style="margin: 13px;">Exemplo 6
+                                        </button>
+                                        <button class="btn btn-primary rounded-pill" type="button"
+                                                onclick="carregaExemplo('06')" style="margin: 13px;">Exemplo 7
+                                        </button>
+                                        <button class="btn btn-primary rounded-pill" type="button"
+                                                onclick="carregaExemplo('07')" style="margin: 13px;">Exemplo 8
+                                        </button>
+                                    </p>
+                                </div>
+                                <div class="tab-pane" role="tabpanel" id="tab-2">
+                                    <div class="dashed_upload" style="position: relative;">
+                                        <div class="wrapper">
+                                            <div class="drop">
+                                                <div class="cont">
+                                                    <i class="fa fa-cloud-upload"></i>
+                                                    <div class="tit">
+                                                        Arraste Aqui
+                                                    </div>
+                                                    <div class="desc">
+                                                        ou
+                                                    </div>
+                                                    <div class="browse">
+                                                        clique aqui para carregar
+                                                    </div>
+                                                </div>
+                                                <output id="list"></output>
+                                                <input id="file" name="file" type="file"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group col-12">
+
+            </div>
+
+            <div class="form-group col-12 mt-3">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fa fa-list"></i> Instruções
+                        <hr class="my-1">
+                        <label class="form-label">Número de instruções a serem executadas:</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" name="nInst" id="nInst" value="1" min="1"
+                                   maxlength/>
+                            <div class="input-group-prepend">
+                                <button type="submit" class="btn btn-primary " name="confirmarNInst"
+                                        onclick="confirmarNInst()"
+                                        id="confirmarNInst"><i class="fa fa-plus"></i> Adicionar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body" id="listaInstrucoes">
+                        <div class="alert alert-info">
+                            <i class="fa fa-info-circle"></i>
+                            Informe no campo acima a quantidade de instruções e clique no botão <b>Adicionar</b>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="accordion my-3" role="tablist" id="accordioninstructionsset">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" role="tab">
+                        <button class="accordion-button" data-bs-toggle="collapse"
+                                data-bs-target="#accordioninstructionsset .item-1" aria-expanded="true"
+                                aria-controls="accordioninstructionsset .item-1">Clique aqui para configurar as
+                            instruções
+                        </button>
+                    </h2>
+                    <div class="accordion-collapse collapse show item-1" role="tabpanel"
+                         data-bs-parent="#accordioninstructionsset">
+                        <div class="accordion-body row">
+                            <p>Ciclos por instrução:</p>
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="ciclosInt">Inteiro:</label>
+                                <input type="number" class="form-control" min="1" value="1" name="ciclosInt"
+                                       id="ciclosInt"/>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="ciclosLoad">Load:</label>
+                                <input type="number" class="form-control" min="1" value="1" name="ciclosLoad"
+                                       id="ciclosLoad"/>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="ciclosStore">Store:</label>
+                                <input type="number" class="form-control" min="1" value="1" name="ciclosStore"
+                                       id="ciclosStore"/>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="ciclosFPMult">FP Mult:</label>
+                                <input type="number" class="form-control" min="1" value="1" name="ciclosFPMult"
+                                       id="ciclosFPMult"/>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="ciclosFPDiv">FP Div:</label>
+                                <input type="number" class="form-control" min="1" value="1" name="ciclosFPDiv"
+                                       id="ciclosFPDiv"/>
+                            </div>
+
+
+                            <p>Quantidade FU's de Memória</p>
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="fuLoad">Load:</label>
+                                <input type="number" class="form-control" min="1" value="1" name="fuLoad" id="fuLoad"/>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="fuStore">Store:</label>
+                                <input type="number" class="form-control" min="1" value="1" name="fuStore"
+                                       id="fuStore"/>
+                            </div>
+                            <p>Quantidade FU's</p>
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="fuInt">Inteiro:</label>
+                                <input type="number" class="form-control" min="1" value="1" name="fuFPMul" id="fuInt"/>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="fuFPMul">FP Mult:</label>
+                                <input type="number" class="form-control" min="1" value="1" name="fuFPMult"
+                                       id="fuFPMul"/>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="fuFPAdd">FP Add:</label>
+                                <input type="number" class="form-control" min="1" value="1" name="fuFPAdd"
+                                       id="fuFPAdd"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button type="reset" onclick="limparCampos()" class="btn btn-secondary text-white" id="limpar">Limpar</button>
+                <button type="submit" onclick="enviar()" id="enviar" class="btn btn-success text-white">Simular <i class="fa fa-bolt"></i>
+                </button>
+            </div>
+        </div>
+        <hr>
+    </div>
+</div>

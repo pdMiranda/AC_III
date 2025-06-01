@@ -1,0 +1,53 @@
+.pulse-button {
+    box-shadow: 0 0 0 0 rgba(90, 153, 212, 0.5);
+    -webkit-animation: pulse 1.5s infinite;
+}
+
+.pulse-button:hover {
+    -webkit-animation: none;
+}
+
+@-webkit-keyframes pulse {
+    0% {
+        -moz-transform: scale(0.98);
+        -ms-transform: scale(0.98);
+        -webkit-transform: scale(0.98);
+        transform: scale(0.98);
+    }
+    70% {
+        -moz-transform: scale(1);
+        -ms-transform: scale(1);
+        -webkit-transform: scale(1);
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(90, 153, 212, 0);
+    }
+    100% {
+        -moz-transform: scale(0.98);
+        -ms-transform: scale(0.98);
+        -webkit-transform: scale(0.98);
+        transform: scale(0.98);
+        box-shadow: 0 0 0 0 rgba(90, 153, 212, 0);
+    }
+}
+
+label {
+    color: #333;
+}
+
+
+input::-webkit-input-placeholder {
+    color: #333;
+}
+
+.form-control {
+    color: #333;
+}
+
+.floatbuttont {
+    position: fixed;
+    bottom: 85px;
+    right: 20px;
+    float: right;
+    z-index: 30000000;
+    padding: 10px 11px;
+}

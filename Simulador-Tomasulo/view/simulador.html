@@ -1,0 +1,62 @@
+<style>
+    .table>:not(caption)>*>* {
+        padding:0 !important;
+        color:black !important;
+    }
+    h3 {
+        color:#4e73df !important;
+    }
+    h4, .h4 {
+        font-size: 1.5rem;
+        color: cornflowerblue !important;
+    }
+</style>
+<div class="card ">
+    <div class="card-header">
+        <h4 class="card-title">Simulador</h4>
+    </div>
+    <div class="card-body">
+       <div class="row">
+           <div class="btn-group col-md-6">
+               <button type="button" class="btn btn-outline-secondary" onclick="$('#simuladorview').hide('show');$('#configuracoesview').show('slow')">
+                   <i class="fas fa-chevron-left"></i> Voltar
+               </button>
+               <button type="button" class="btn btn-outline-primary" id="resultado" onclick="resultadobtn()">
+                   Resultado <i class="fas fa-bolt"></i>
+               </button>
+               <button type="button" class="btn btn-success text-white"
+                       onclick="proximoFunctionN()" id="proximo">Proxímo <i class="fa fa-arrow-right"></i>
+               </button>
+           </div>
+           <div class=" text-center  col-md-6">
+               <button class="btn btn-outline-primary m-1"><div id="clock"></div></button>
+           </div>
+       </div>
+        <hr>
+
+        <div class="row">
+            <div class="col-md-6" id="estadoInst"></div>
+            <div class="col-md-6" id="bufferReord">
+                <h3>Buffer de Reordenamento</h3>
+                <table class="table table-striped table-hover">
+                    <thead>
+                    <tr>
+                        <th>Entrada</th>
+                        <th>Busy</th>
+                        <th>Instrução</th>
+                        <th>Estado</th>
+                        <th>Destino</th>
+                        <th>Valor</th>
+                    </tr>
+                    </thead>
+                    <tbody id="estadoInstrucao">
+                    </tbody>
+                </table>
+
+            </div>
+            <div class="col-md-6" id="estadoMemUF"></div>
+            <div class="col-md-6" id="estadoUF"></div>
+            <div class="col-md-12" id="estadoMem"></div>
+        </div>
+    </div>
+</div>
