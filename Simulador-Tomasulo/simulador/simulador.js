@@ -1,5 +1,15 @@
  Estado = class  {
     constructor(CONFIG, instrucoes) {
+        this.branchSpeculation = {
+            active: false,
+            branchIndex: null,
+            predictedTaken: false,
+            speculativeInstructions: []
+        };
+        
+        this.branchSpeculationHistory = [];
+        this.branchHistory = {}
+
         // salva as configurações passadas
         this.configuracao = {
             "numInstrucoes": CONFIG["nInst"], // quantidade de instrucoes
@@ -7,14 +17,6 @@
             "unidades": CONFIG["unidades"]    // número de ufs
         };
 
-        this.branchSpeculation = {
-            active: false,
-            branchIndex: null,
-            predictedTaken: false,
-            speculativeInstructions: []
-        };
-
-        this.branchSpeculationHistory = [];
 
         // cria o vetor de instrucoes
         this.estadoInstrucoes = [];
@@ -164,8 +166,10 @@
             if (UFParaUsar) {
                 // Se BEQ ou BNEZ, inicia especulação (sempre prevê "não desvia" para exemplo)
                 if ((novaInstrucao.instrucao.operacao === 'BEQ' || novaInstrucao.instrucao.operacao === 'BNEZ') && !this.isSpeculating()) {
-                    this.startBranchSpeculation(novaInstrucao.posicao, true); // true = prevê desvia
-                    novaInstrucao.especulativa = false; // o próprio desvio não é especulativo
+                    let idx = novaInstrucao.posicao;
+                    let predicted = this.branchHistory[idx] !== undefined ? this.branchHistory[idx] : false; // default: nao desvia
+                    this.startBranchSpeculation(idx, predicted);
+                    novaInstrucao.especulativa = false;
                 } else if (this.isSpeculating()) {
                     novaInstrucao.especulativa = true; // instruções após o desvio são especulativas
                     this.addSpeculativeInstruction(novaInstrucao.posicao);
@@ -536,7 +540,9 @@
 
                     // Se BEQ/BNEZ, resolve especulação
                     if ((uf.operacao === 'BEQ' || uf.operacao === 'BNEZ') && this.isSpeculating()) {
-                        let realTaken = true; // Sempre desvia
+                        let realTaken = true; // Sempre desvia (apenas primeiro exemplo)
+
+                        this.branchHistory[this.branchSpeculation.branchIndex] = realTaken;
 
                         // Salva no histórico ANTES de limpar o branchSpeculation
                         this.branchSpeculationHistory.push({
@@ -1213,40 +1219,44 @@ function limparCampos() {
     $("#estadoMem").html("");
 }
 
- function enviar(){
-     if(!confirmou) {
-         alert("Confirme o número de instruções!");
-         return;
-     }
+function enviar(){
+    if(!confirmou) {
+        alert("Confirme o número de instruções!");
+        return;
+    }
 
-     console.log("aqui");
-     verificaNInst();
+    // Limpa variáveis globais e tabelas
+    diagrama = null;
+    terminou = false;
+    $("#clock").html("Clock: 0");
+    $("#tabelaMetricas").html("");
+    $("#tabelaEspeculacao").html("");
 
-     const CONFIG = getConfig();
-     if(!CONFIG) {
-         return;
-     }
-     var insts = getAllInst(CONFIG["nInst"]);
-     if(!insts) {
-         return;
-     }
-     diagrama = new Estado(CONFIG, insts);
-     gerarTabelaEstadoInstrucaoHTML(diagrama);
-     gerarTabelaBufferReordenamento(diagrama);
-     atualizaTabelaEstadoInstrucaoHTML(diagrama["tabela"])
-     gerarTabelaEstadoUFHTML(diagrama);
-     console.log('diagrama UF porra', diagrama["unidadesFuncionais"]);
-     atualizaTabelaEstadoUFHTML(diagrama["unidadesFuncionais"]);
-     gerarTabelaEstadoMenHTML(diagrama);
-     gerarTabelaEstadoUFMem(diagrama);
-     atualizaTabelaEstadoUFMemHTML(diagrama["ufMem"]);
-     atualizaTabelaBufferReordenamentoHTML(diagrama["ufMem"]);
-     terminou = false;
-     $("#clock").html("Clock: 0");
-     $("#tabelaMetricas").html("");
-     $('#configuracoesview').hide('slow');
-     $('#simuladorview').show('slow');
- }
+    console.log("aqui");
+    verificaNInst();
+
+    const CONFIG = getConfig();
+    if(!CONFIG) {
+        return;
+    }
+    var insts = getAllInst(CONFIG["nInst"]);
+    if(!insts) {
+        return;
+    }
+    diagrama = new Estado(CONFIG, insts);
+    gerarTabelaEstadoInstrucaoHTML(diagrama);
+    gerarTabelaBufferReordenamento(diagrama);
+    atualizaTabelaEstadoInstrucaoHTML(diagrama["tabela"])
+    gerarTabelaEstadoUFHTML(diagrama);
+    console.log('diagrama UF porra', diagrama["unidadesFuncionais"]);
+    atualizaTabelaEstadoUFHTML(diagrama["unidadesFuncionais"]);
+    gerarTabelaEstadoMenHTML(diagrama);
+    gerarTabelaEstadoUFMem(diagrama);
+    atualizaTabelaEstadoUFMemHTML(diagrama["ufMem"]);
+    atualizaTabelaBufferReordenamentoHTML(diagrama["ufMem"]);
+    $('#configuracoesview').hide('slow');
+    $('#simuladorview').show('slow');
+}
 
 function verificaNInst() {
     var tds = $("#tabelaInst").children('tbody').children('tr').length;
@@ -1269,9 +1279,7 @@ function proximoFunctionN() {
     atualizaClock(diagrama.clock);
     atualizaStatusEspeculacao(diagrama);
     gerarTabelaEspeculacao(diagrama);
-    if (terminou) {
-        gerarTabelaMetricas(diagrama);
-    }
+    gerarTabelaMetricas(diagrama);
 }
 
 function resultadobtn() {
@@ -1287,9 +1295,7 @@ function resultadobtn() {
         atualizaStatusEspeculacao(diagrama);
         gerarTabelaEspeculacao(diagrama); 
     }
-    if (terminou) {
-        gerarTabelaMetricas(diagrama);
-    }
+    gerarTabelaMetricas(diagrama);
 }
 
 var confirmou = false;
