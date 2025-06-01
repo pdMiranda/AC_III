@@ -1,4 +1,4 @@
- Estado = class  {
+Estado = class {
     constructor(CONFIG, instrucoes) {
         this.branchSpeculation = {
             active: false,
@@ -6,10 +6,11 @@
             predictedTaken: false,
             speculativeInstructions: []
         };
-        
+
         this.branchSpeculationHistory = [];
         this.branchHistory = {}
         this.globalBranchHistory = undefined;
+        this.ciclosSemIssue = 0;
 
         // salva as configurações passadas
         this.configuracao = {
@@ -21,7 +22,7 @@
 
         // cria o vetor de instrucoes
         this.estadoInstrucoes = [];
-        for(let i = 0; i < this.configuracao["numInstrucoes"]; i++) {
+        for (let i = 0; i < this.configuracao["numInstrucoes"]; i++) {
             let linha = {}
             linha["instrucao"] = {                      // armazena a instrucao
                 "operacao": instrucoes[i]["d"],
@@ -49,7 +50,7 @@
                 unidadeFuncional["tipoUnidade"] = tipoUnidade;  // define o tipo da unidade funcional
                 unidadeFuncional["tempo"] = null;               // salva quanto tempo ainda falta para terminar a exeucao
 
-                let nome = tipoUnidade + (i+1);                 // cria o nome da uf
+                let nome = tipoUnidade + (i + 1);                 // cria o nome da uf
                 unidadeFuncional["nome"] = nome;
                 unidadeFuncional["ocupado"] = false;            // se a unidade esta ocupada ou nao
 
@@ -66,15 +67,15 @@
 
         // cria as unidades funcionais da memoria
         this.unidadesFuncionaisMemoria = {}
-        for(var tipoUnidade in CONFIG["unidadesMem"]) {
-            for(let i = 0; i < CONFIG["unidadesMem"][tipoUnidade]; i++) {
+        for (var tipoUnidade in CONFIG["unidadesMem"]) {
+            for (let i = 0; i < CONFIG["unidadesMem"][tipoUnidade]; i++) {
                 let unidadeFuncionalMemoria = {};
                 unidadeFuncionalMemoria["instrucao"] = null;            // armazana a instrucao que esta executando
                 unidadeFuncionalMemoria["estadoInstrucao"] = null;      // salva todo o estado da instrucao
                 unidadeFuncionalMemoria["tipoUnidade"] = tipoUnidade;   // define o tipo da unidade
                 unidadeFuncionalMemoria["tempo"] = null;                // tempo que ainda falta pra instrucao acabar
 
-                let nome = tipoUnidade + (i+1);                         //cria o nome da uf
+                let nome = tipoUnidade + (i + 1);                         //cria o nome da uf
                 unidadeFuncionalMemoria["nome"] = nome;
                 unidadeFuncionalMemoria["ocupado"] = false;             // define se a uf ta ocuapda ou nao
                 unidadeFuncionalMemoria["qi"] = null;                   // uf que esta gerando o valor de vi
@@ -92,11 +93,11 @@
 
         this.estacaoRegistradores = {}
         // cria os registradores de ponto flutuante
-        for(let i = 0; i < 32; i += 2) {
+        for (let i = 0; i < 32; i += 2) {
             this.estacaoRegistradores["F" + i] = null;
         }
         // cria os registradores de inteiro (necessarios para impedir erros com as operacoes de inteiro)
-        for(let i = 0; i < 32; i += 1) {
+        for (let i = 0; i < 32; i += 1) {
             this.estacaoRegistradores["R" + i] = null;
         }
     }
@@ -139,7 +140,7 @@
         if (!this.isSpeculating()) {
             for (let i = 0; i < this.estadoInstrucoes.length; i++) {
                 const element = this.estadoInstrucoes[i];
-                if(element.issue == null)
+                if (element.issue == null)
                     return element;
             }
             return undefined;
@@ -148,7 +149,7 @@
             let branchIdx = this.branchSpeculation.branchIndex;
             for (let i = branchIdx + 1; i < this.estadoInstrucoes.length; i++) {
                 const element = this.estadoInstrucoes[i];
-                if(element.issue == null) {
+                if (element.issue == null) {
                     this.addSpeculativeInstruction(i);
                     return element;
                 }
@@ -165,15 +166,20 @@
             let UFParaUsar = this.getFUVazia(ufInstrucao);
 
             if (UFParaUsar) {
-                // Se BEQ ou BNEZ, inicia especulação (sempre prevê "não desvia" para exemplo)
+                // Se BEQ ou BNEZ, inicia especulação (usa preditor global 1-bit)
                 if ((novaInstrucao.instrucao.operacao === 'BEQ' || novaInstrucao.instrucao.operacao === 'BNEZ') && !this.isSpeculating()) {
                     let idx = novaInstrucao.posicao;
-                    let predicted = this.globalBranchHistory !== undefined ? this.globalBranchHistory : false; // default: nao desvia
+                    // Predição: se já houve desvio antes, usa o último resultado global, senão prevê "não desvia"
+                    let predicted = this.globalBranchHistory !== undefined ? this.globalBranchHistory : false;
                     this.startBranchSpeculation(idx, predicted);
                     novaInstrucao.especulativa = false;
                 } else if (this.isSpeculating()) {
-                    novaInstrucao.especulativa = true; // instruções após o desvio são especulativas
-                    this.addSpeculativeInstruction(novaInstrucao.posicao);
+                    // Instruções após o desvio especulado são marcadas como especulativas
+                    novaInstrucao.especulativa = true;
+                    // Adiciona apenas se ainda não está na lista
+                    if (!this.branchSpeculation.speculativeInstructions.includes(novaInstrucao.posicao)) {
+                        this.addSpeculativeInstruction(novaInstrucao.posicao);
+                    }
                 } else {
                     novaInstrucao.especulativa = false;
                 }
@@ -187,8 +193,11 @@
 
                 if ((UFParaUsar.tipoUnidade !== 'Store') && (UFParaUsar.operacao !== 'BEQ') && (UFParaUsar.operacao !== 'BNEZ'))
                     this.escreveEstacaoRegistrador(novaInstrucao.instrucao, UFParaUsar.nome);
+
+                return true; // Instrução emitida
             }
         }
+        return false; // Nenhuma instrução emitida
     }
 
     verificaUFInstrucao(instrucao) {
@@ -223,7 +232,7 @@
         // caso a instrucao seja de load/store, busca nas unidades de memoria
         if ((tipoFU === 'Load') || (tipoFU === 'Store')) {
             // percorre todas as unidades de memoria
-            for(let key in this.unidadesFuncionaisMemoria) {
+            for (let key in this.unidadesFuncionaisMemoria) {
                 var ufMem = this.unidadesFuncionaisMemoria[key];
 
                 // caso seja do tipo que esta buscando e esteja livre, retorna ela
@@ -237,7 +246,7 @@
             return undefined;
         }
         // percorre todas as unidades funcionais
-        for(let key in this.unidadesFuncionais) {
+        for (let key in this.unidadesFuncionais) {
             var uf = this.unidadesFuncionais[key];
 
             // caso seja do tipo que esta buscando e esteja livre, retorna ela
@@ -373,7 +382,7 @@
         // funcao que libera as uf que esta esperando essa terminar
 
         // percorre todas as unidades funcionais
-        for(let keyUF in this.unidadesFuncionais) {
+        for (let keyUF in this.unidadesFuncionais) {
             const ufOlhando = this.unidadesFuncionais[keyUF];
 
             // se a unidade esta ocupada e o esta esperando esta uf em qj ou qk
@@ -401,7 +410,7 @@
         }
 
         // percorre todas as unidades funcionais de memoria
-        for(let keyUF in this.unidadesFuncionaisMemoria) {
+        for (let keyUF in this.unidadesFuncionaisMemoria) {
             const ufOlhando = this.unidadesFuncionaisMemoria[keyUF];
 
             // se unidade estiver ocuapda
@@ -464,7 +473,7 @@
         // funcao da fase de execucao do tomasulo
 
         // percorre todas as unidades funcionais da memoria
-        for(let key in this.unidadesFuncionaisMemoria) {
+        for (let key in this.unidadesFuncionaisMemoria) {
             var ufMem = this.unidadesFuncionaisMemoria[key];
 
             // caso a unidade esteja ocupada e nao esteja esperando ninguem
@@ -481,7 +490,7 @@
         }
 
         // percorre todas as unidades funcionais
-        for(let key in this.unidadesFuncionais) {
+        for (let key in this.unidadesFuncionais) {
             var uf = this.unidadesFuncionais[key];
 
             // caso a unidade esteja ocupada e nao esteja esperando ninguem
@@ -493,7 +502,7 @@
                 if (uf.tempo === 0) {
                     uf.estadoInstrucao.exeCompleta = this.clock;
                     uf.estadoInstrucao.busy = false; // Se tempo for 0, execução finaliza, então recebe false (Não está BUSY)
-    
+
                 }
             }
         }
@@ -503,7 +512,7 @@
         // fase de escrita do tomasulo
 
         // percorre todas as unidades funcionais de memoria
-        for(let key in this.unidadesFuncionaisMemoria) {
+        for (let key in this.unidadesFuncionaisMemoria) {
             const ufMem = this.unidadesFuncionaisMemoria[key];
 
             // caso a unidade esteja ocupada e o tempo for -1
@@ -527,7 +536,7 @@
         }
 
         // percorre todas as unidades funcionais
-        for(let key in this.unidadesFuncionais) {
+        for (let key in this.unidadesFuncionais) {
             const uf = this.unidadesFuncionais[key];
 
             if (uf.ocupado === true) {
@@ -578,10 +587,17 @@
 
         this.clock++;  // adiciona 1 no clock
 
-        // executa as instrucoes de issue, execucao e escrita do tomasulo
-        this.issueNovaInstrucao();
+        // Emite instrução (issue)
+        let issued = this.issueNovaInstrucao() ? true : false;
+
         this.executaInstrucao();
         this.escreveInstrucao();
+
+        // Só conta bolha se ainda há instruções para emitir e nenhuma foi emitida neste ciclo
+        const aindaTemIssue = this.estadoInstrucoes.some(i => i.issue === null);
+        if (!issued && aindaTemIssue) {
+            this.ciclosSemIssue++;
+        }
 
         // prints no console para debug
         console.log('Estado instrução:');
@@ -611,7 +627,7 @@ function getConfig() {
     var conf = {};
 
     conf["nInst"] = $("#nInst").val();
-    if(conf["nInst"] < 1) {
+    if (conf["nInst"] < 1) {
         alert("O número de instruções deve ser no mínimo 1!");
         return null;
     }
@@ -627,7 +643,7 @@ function getConfig() {
 
 
     if ((ciclos["Integer"] < 1) || (ciclos["Add"] < 1) || (ciclos["Div"] < 1) ||
-        (ciclos["Mult"] < 1) || (ciclos["Load"] < 1)  || (ciclos["Store"] < 1)) {
+        (ciclos["Mult"] < 1) || (ciclos["Load"] < 1) || (ciclos["Store"] < 1)) {
         alert("A quantidade de ciclos por instrução, para todas as unidades, deve ser de no mínimo 1 ciclo!");
         return null;
     }
@@ -650,7 +666,7 @@ function getConfig() {
     unidadesMem["Store"] = $("#fuStore").val();
 
 
-    if(unidades["Load"] < 1 || unidadesMem["Store"] < 1) {
+    if (unidades["Load"] < 1 || unidadesMem["Store"] < 1) {
         alert("A quantidade de unidades funcionais de memória deve ser no mínimo 1!");
         return;
     }
@@ -683,7 +699,7 @@ function alertValidaInstrucao(instrucao) {
 
 function numeroEhInteiro(numero) {
     var valor = parseInt(numero);
-    if (valor != numero){
+    if (valor != numero) {
         return false;
     }
     return true;
@@ -696,23 +712,23 @@ function registradorInvalidoR(registrador) {
 
 function registradorInvalidoF(registrador) {
     return (registrador[0] != 'F' || registrador.replace("F", "") == "" ||
-            registrador.replace("F", "") % 2 != 0 || registrador.replace("F", "") > 30) ||
+        registrador.replace("F", "") % 2 != 0 || registrador.replace("F", "") > 30) ||
         !numeroEhInteiro(registrador.replace("F", ""));
 }
 
 function validaInstrucao(instrucao) {
     console.log(instrucao);
     var unidade = getUnidadeInstrucao(instrucao["d"]);
-    if(!unidade) {
+    if (!unidade) {
         alert("O comando da instrução é inváilido");
         return false;
     }
 
-    if(unidade == "Load" || unidade == "Store") {
+    if (unidade == "Load" || unidade == "Store") {
         var comando = instrucao["d"]
 
-        if(comando == "LD" || comando == "SD") {
-            if(registradorInvalidoF(instrucao["r"]) || isNaN(parseInt(instrucao["s"])) || registradorInvalidoR(instrucao["t"])) {
+        if (comando == "LD" || comando == "SD") {
+            if (registradorInvalidoF(instrucao["r"]) || isNaN(parseInt(instrucao["s"])) || registradorInvalidoR(instrucao["t"])) {
                 alertValidaInstrucao(instrucao);
                 return false;
             }
@@ -720,32 +736,32 @@ function validaInstrucao(instrucao) {
         }
     }
 
-    if(unidade == "Integer") {
+    if (unidade == "Integer") {
         var comando = instrucao["d"]
 
-        if(comando == "BEQ") {
-            if(registradorInvalidoR(instrucao["r"]) || registradorInvalidoR(instrucao["s"]) || (instrucao["t"].replace(" ", "") == "")) {
+        if (comando == "BEQ") {
+            if (registradorInvalidoR(instrucao["r"]) || registradorInvalidoR(instrucao["s"]) || (instrucao["t"].replace(" ", "") == "")) {
                 alertValidaInstrucao(instrucao);
                 return false;
             }
             return true;
         }
-        if(comando == "BNEZ") {
-            if(registradorInvalidoR(instrucao["r"]) || (instrucao["s"].replace(" ", "") == "") || (instrucao["t"].replace(" ", "") != "")) {
+        if (comando == "BNEZ") {
+            if (registradorInvalidoR(instrucao["r"]) || (instrucao["s"].replace(" ", "") == "") || (instrucao["t"].replace(" ", "") != "")) {
                 alertValidaInstrucao(instrucao);
                 return false;
             }
             return true;
         }
-        if(comando == "ADD") {
-            if(registradorInvalidoR(instrucao["r"]) || registradorInvalidoR(instrucao["s"]) || registradorInvalidoR(instrucao["t"])) {
+        if (comando == "ADD") {
+            if (registradorInvalidoR(instrucao["r"]) || registradorInvalidoR(instrucao["s"]) || registradorInvalidoR(instrucao["t"])) {
                 alertValidaInstrucao(instrucao);
                 return false;
             }
             return true;
         }
-        if(comando == "DADDUI") {
-            if(registradorInvalidoR(instrucao["r"]) || registradorInvalidoR(instrucao["s"]) || isNaN(parseInt(instrucao["t"]))) {
+        if (comando == "DADDUI") {
+            if (registradorInvalidoR(instrucao["r"]) || registradorInvalidoR(instrucao["s"]) || isNaN(parseInt(instrucao["t"]))) {
                 alertValidaInstrucao(instrucao);
                 return false;
             }
@@ -753,7 +769,7 @@ function validaInstrucao(instrucao) {
         return true;
     }
 
-    if(registradorInvalidoF(instrucao["r"]) || registradorInvalidoF(instrucao["s"]) || registradorInvalidoF(instrucao["t"])) {
+    if (registradorInvalidoF(instrucao["r"]) || registradorInvalidoF(instrucao["s"]) || registradorInvalidoF(instrucao["t"])) {
         alertValidaInstrucao(instrucao);
         return false;
     }
@@ -767,7 +783,7 @@ function getAllInst(nInst) {
 
     for (var i = 0; i < nInst; i++) {
         var instrucao = getInst(i);
-        if(!validaInstrucao(instrucao)) {
+        if (!validaInstrucao(instrucao)) {
             return null;
         }
         insts.push(instrucao);
@@ -806,7 +822,7 @@ function getUnidadeInstrucao(instrucao) {
 // -----------------------------------------------------------------------------
 
 function atualizaTabelaEstadoInstrucaoHTML(tabelaInsts) {
-    for(let i in tabelaInsts) {
+    for (let i in tabelaInsts) {
         const inst = tabelaInsts[i];
         $(`#i${inst["posicao"]}_is`).text(inst["issue"] ? inst["issue"] : "");
         $(`#i${inst["posicao"]}_ec`).text(inst["exeCompleta"] ? inst["exeCompleta"] : "");
@@ -815,43 +831,43 @@ function atualizaTabelaEstadoInstrucaoHTML(tabelaInsts) {
 }
 
 function atualizaTabelaBufferReordenamentoHTML(tabelaInsts) {
-    for(let i in tabelaInsts) {
+    for (let i in tabelaInsts) {
         const inst = tabelaInsts[i];
         let espec = inst.especulativa ? " (especulativa)" : "";
         $(`#${inst["posicao"]}_destiny`).text(inst["instrucao"].registradorR + espec);
 
-        if (inst["issue"] != null) {            
+        if (inst["issue"] != null) {
             $(`#${inst["posicao"]}_estado`).text("Execute");
             $(`#${inst["posicao"]}_busy`).text("sim");
         }
 
-        if (inst["exeCompleta"] != null) {            
+        if (inst["exeCompleta"] != null) {
             $(`#${inst["posicao"]}_estado`).text("Write Result");
 
-            if ( inst["instrucao"].operacao == "SD" || inst["instrucao"].operacao == "LD" ) {
+            if (inst["instrucao"].operacao == "SD" || inst["instrucao"].operacao == "LD") {
 
-                $(`#${inst["posicao"]}_value`).text("Mem["+inst["instrucao"].registradorS+" + Regs[" + inst["instrucao"].registradorT + "]]");
+                $(`#${inst["posicao"]}_value`).text("Mem[" + inst["instrucao"].registradorS + " + Regs[" + inst["instrucao"].registradorT + "]]");
 
-            } else if ( inst["instrucao"].operacao == "ADDD" || inst["instrucao"].operacao == "ADD" || inst["instrucao"].operacao == "DADDUI" ) {
+            } else if (inst["instrucao"].operacao == "ADDD" || inst["instrucao"].operacao == "ADD" || inst["instrucao"].operacao == "DADDUI") {
 
-                $(`#${inst["posicao"]}_value`).text(inst["instrucao"].registradorS+" + " + inst["instrucao"].registradorT);
+                $(`#${inst["posicao"]}_value`).text(inst["instrucao"].registradorS + " + " + inst["instrucao"].registradorT);
 
-            } else if ( inst["instrucao"].operacao == "SUBD" ) {
+            } else if (inst["instrucao"].operacao == "SUBD") {
 
-                $(`#${inst["posicao"]}_value`).text(inst["instrucao"].registradorS+" - " + inst["instrucao"].registradorT);
+                $(`#${inst["posicao"]}_value`).text(inst["instrucao"].registradorS + " - " + inst["instrucao"].registradorT);
 
-            } else if ( inst["instrucao"].operacao == "MULTD" ) {
+            } else if (inst["instrucao"].operacao == "MULTD") {
 
-                $(`#${inst["posicao"]}_value`).text(inst["instrucao"].registradorS+" * " + inst["instrucao"].registradorT);
+                $(`#${inst["posicao"]}_value`).text(inst["instrucao"].registradorS + " * " + inst["instrucao"].registradorT);
 
-            } else if ( inst["instrucao"].operacao == "DIVD" ) {
+            } else if (inst["instrucao"].operacao == "DIVD") {
 
-                $(`#${inst["posicao"]}_value`).text(inst["instrucao"].registradorS+" / " + inst["instrucao"].registradorT);
+                $(`#${inst["posicao"]}_value`).text(inst["instrucao"].registradorS + " / " + inst["instrucao"].registradorT);
 
             }
         }
 
-        if (inst["write"] != null) {            
+        if (inst["write"] != null) {
             $(`#${inst["posicao"]}_estado`).text("Commit");
             $(`#${inst["posicao"]}_busy`).text("não");
         }
@@ -862,7 +878,7 @@ function atualizaTabelaBufferReordenamentoHTML(tabelaInsts) {
 }
 
 function atualizaTabelaEstadoUFHTML(ufs) {
-    for(let i in ufs) {
+    for (let i in ufs) {
         const uf = ufs[i];
         $(`#${uf["nome"]}_tempo`).text((uf["tempo"] !== null) ? uf["tempo"] : "");
         $(`#${uf["nome"]}_ocupado`).text((uf["ocupado"]) ? "sim" : "não");
@@ -881,7 +897,7 @@ function atualizaTabelaEstadoMenHTML(men) {
 }
 
 function atualizaClock(clock) {
-    $("#clock").html("Ciclo: " + clock );
+    $("#clock").html("Ciclo: " + clock);
 
 }
 
@@ -899,7 +915,7 @@ function atualizaStatusEspeculacao(diagrama) {
 }
 
 function atualizaTabelaEstadoInstrucaoHTML(tabelaInsts) {
-    for(let i in tabelaInsts) {
+    for (let i in tabelaInsts) {
         const inst = tabelaInsts[i];
         let espec = inst.especulativa ? " (especulativa)" : "";
         $(`#i${inst["posicao"]}_is`).text((inst["issue"] ? inst["issue"] : "") + espec);
@@ -917,7 +933,7 @@ function gerarTabelaEstadoInstrucaoHTML(diagrama) {
         + "<th>k</th><th>Issue</th><th>Exec. Completa</th><th>Write Result</th></tr>"
     );
 
-    for (let i = 0 ; i < diagrama.configuracao["numInstrucoes"]; ++i) {
+    for (let i = 0; i < diagrama.configuracao["numInstrucoes"]; ++i) {
         let instrucao = diagrama.estadoInstrucoes[i].instrucao;
         s += (
             `<tr> <td>I${i}</td> <td>${instrucao["operacao"]}</td>
@@ -937,12 +953,12 @@ function gerarTabelaBufferReordenamento(diagrama) {
         + "<tr><th>Entrada</th><th>Ocupado</th><th>Instrução</th>"
         + "<th>Estado</th><th>Destino</th><th>Valor</th></tr>"
     );
-    for (let i = 0 ; i < diagrama.configuracao["numInstrucoes"]; ++i) {
+    for (let i = 0; i < diagrama.configuracao["numInstrucoes"]; ++i) {
         let instrucao = diagrama.estadoInstrucoes[i].instrucao;
         s += (
             `<tr><td>${i}</td>
-           <td id="`+ i +`_busy">não</td> <td>${instrucao["operacao"]} ${instrucao["registradorR"]}, ${instrucao["registradorS"]}, ${instrucao["registradorT"]}</td> <td id="`+ i +`_estado">Issue</td>
-           <td id="`+ i +`_destiny"></td> <td id="`+ i +`_value"></td>`
+           <td id="`+ i + `_busy">não</td> <td>${instrucao["operacao"]} ${instrucao["registradorR"]}, ${instrucao["registradorS"]}, ${instrucao["registradorT"]}</td> <td id="` + i + `_estado">Issue</td>
+           <td id="`+ i + `_destiny"></td> <td id="` + i + `_value"></td>`
         );
     }
     s += "</table>";
@@ -957,7 +973,7 @@ function gerarTabelaEstadoUFHTML(diagrama) {
 
     console.log(diagrama.unidadesFuncionais);
     let unidadesFuncionais = diagrama.unidadesFuncionais;
-    for(let key in unidadesFuncionais) {
+    for (let key in unidadesFuncionais) {
         var uf = unidadesFuncionais[key];
 
         s += `<tr><td id="${uf["nome"]}_tempo"></td>
@@ -975,14 +991,14 @@ function gerarTabelaEstadoUFHTML(diagrama) {
 function gerarTabelaEstadoMenHTML(diagrama) {
     var s = `<h3>Estado dos registradores</h3> <table class="table table-striped table-hover">`;
 
-    for(var i = 0; i < 2; ++i) {
+    for (var i = 0; i < 2; ++i) {
         s += `<tr>`
-        for(var j = 0; j < 16; j += 2) {
-            s += `<th>F${j+i*16}</th>`
+        for (var j = 0; j < 16; j += 2) {
+            s += `<th>F${j + i * 16}</th>`
         }
         s += `</tr> <tr>`
-        for(var j = 0; j < 16; j += 2) {
-            s += `<td id="F${j+i*16}">&nbsp;</td>`
+        for (var j = 0; j < 16; j += 2) {
+            s += `<td id="F${j + i * 16}">&nbsp;</td>`
         }
         s += `</tr>`
     }
@@ -997,7 +1013,7 @@ function gerarTabelaEstadoUFMem(diagrama) {
         + "<tr><th>Tempo</th><th>Instrução</th><th>Ocupado</th><th>Endereço</th>"
         + "<th>Destino</th>"
     );
-    for(let key in diagrama.unidadesFuncionaisMemoria) {
+    for (let key in diagrama.unidadesFuncionaisMemoria) {
         var ufMem = diagrama.unidadesFuncionaisMemoria[key];
 
         s += `<tr><td id="${ufMem["nome"]}_tempo"></td>
@@ -1031,11 +1047,10 @@ function gerarTabelaEspeculacao(diagrama) {
                     <td>${h.status}</td>
                     <td>${h.branchIndex !== null ? "I" + h.branchIndex : "-"}</td>
                     <td>${h.predictedTaken ? "Desvia" : "Não desvia"}</td>
-                    <td>${
-                        h.speculativeInstructions && h.speculativeInstructions.length > 0
-                            ? h.speculativeInstructions.map(i => "I" + i).join(", ")
-                            : "-"
-                    }</td>
+                    <td>${h.speculativeInstructions && h.speculativeInstructions.length > 0
+                    ? h.speculativeInstructions.map(i => "I" + i).join(", ")
+                    : "-"
+                }</td>
                 </tr>
             `;
         }
@@ -1058,11 +1073,10 @@ function gerarTabelaEspeculacao(diagrama) {
                 <td>Ativa</td>
                 <td>${espec.branchIndex !== null ? "I" + espec.branchIndex : "-"}</td>
                 <td>${espec.predictedTaken ? "Desvia" : "Não desvia"}</td>
-                <td>${
-                    espec.speculativeInstructions && espec.speculativeInstructions.length > 0
-                        ? espec.speculativeInstructions.map(i => "I" + i).join(", ")
-                        : "-"
-                }</td>
+                <td>${espec.speculativeInstructions && espec.speculativeInstructions.length > 0
+                ? espec.speculativeInstructions.map(i => "I" + i).join(", ")
+                : "-"
+            }</td>
             </tr>
         `;
     }
@@ -1081,8 +1095,8 @@ function gerarTabelaMetricas(diagrama) {
     // IPC (Instruções por ciclo)
     const ipc = (ciclosTotais > 0) ? (instrucoesCompletas / ciclosTotais).toFixed(3) : "-";
 
-    // Ciclos de bolha: ciclos em que nenhuma instrução foi emitida (simples: ciclos - instruções emitidas)
-    const ciclosDeBolha = ciclosTotais - instrucoesCompletas;
+    // Ciclos de bolha: ciclos em que nenhuma instrução foi emitida (mais fiel ao pipeline)
+    const ciclosDeBolha = diagrama.ciclosSemIssue !== undefined ? diagrama.ciclosSemIssue : (ciclosTotais - instrucoesCompletas);
 
     let s = `
         <h3>Métricas de Desempenho</h3>
@@ -1105,7 +1119,7 @@ function gerarTabelaMetricas(diagrama) {
 }
 
 function atualizaTabelaEstadoUFMemHTML(ufsMem) {
-    for(let key in ufsMem) {
+    for (let key in ufsMem) {
         const ufMem = ufsMem[key];
         console.log('QQQQ', ufMem);
         $(`#${ufMem["nome"]}_tempo`).text((ufMem["tempo"] !== null) ? ufMem["tempo"] : "");
@@ -1118,7 +1132,7 @@ function atualizaTabelaEstadoUFMemHTML(ufsMem) {
 
 function geraTabelaParaInserirInstrucoes(nInst) {
     var tabela = "<table id='tabelaInst' class='table table-striped table-hover'>"
-    for(var i = 0; i < nInst; i++) {
+    for (var i = 0; i < nInst; i++) {
         var d = "D" + i;
         var r = "R" + i;
         var s = "S" + i;
@@ -1139,9 +1153,9 @@ function geraTabelaParaInserirInstrucoes(nInst) {
             "<option value=\"BEQ\">BEQ</option>" +
             "<option value=\"BNEZ\">BNEZ</option>" +
             "</td>" +
-            "<td><input class='form-control' type=\"text\" name=\""+ r + "\" id=\""+ r + "\" size=\"3\" maxlength=\"3\" /></td>" +
-            "<td><input class='form-control' type=\"text\" name=\""+ s + "\" id=\""+ s + "\" size=\"3\" maxlength=\"5\" /></td>" +
-            "<td><input class='form-control' type=\"text\" name=\""+ t + "\" id=\""+ t + "\" size=\"3\" maxlength=\"3\" /></td>" +
+            "<td><input class='form-control' type=\"text\" name=\"" + r + "\" id=\"" + r + "\" size=\"3\" maxlength=\"3\" /></td>" +
+            "<td><input class='form-control' type=\"text\" name=\"" + s + "\" id=\"" + s + "\" size=\"3\" maxlength=\"5\" /></td>" +
+            "<td><input class='form-control' type=\"text\" name=\"" + t + "\" id=\"" + t + "\" size=\"3\" maxlength=\"3\" /></td>" +
             "</tr>"
         );
     }
@@ -1152,17 +1166,17 @@ function geraTabelaParaInserirInstrucoes(nInst) {
 // -----------------------------------------------------------------------------
 
 function carregaExemplo(exN = false) {
-    if(!exN) {
+    if (!exN) {
         exN = $("#exemploSelect").val();
         confirmou = true;
     }
     confirmou = true;
-    $.getJSON(`./presets/ex${exN}.json`, function() {
+    $.getJSON(`./presets/ex${exN}.json`, function () {
         console.log("Lido :3");
 
-    }).fail(function() {
+    }).fail(function () {
         alert("Não foi possivel carregar o exemplo.")
-    }).done(function(data) {
+    }).done(function (data) {
         $("#nInst").val(data["insts"].length);
         var confirmou = confirmarNInst();
 
@@ -1188,7 +1202,7 @@ function carregaExemplo(exN = false) {
 
 function confirmarNInst() {
     var nInst = $("#nInst").val();
-    if(nInst < 1) {
+    if (nInst < 1) {
         alert("O número de instruções deve ser no mínimo 1");
         return false;
     }
@@ -1216,13 +1230,13 @@ function limparCampos() {
 
     $("#clock").html("");
     $("#estadoInst").html("");
-    $("#estadoMemUF").html("");getAllInst();
+    $("#estadoMemUF").html(""); getAllInst();
     $("#estadoUF").html("");
     $("#estadoMem").html("");
 }
 
-function enviar(){
-    if(!confirmou) {
+function enviar() {
+    if (!confirmou) {
         alert("Confirme o número de instruções!");
         return;
     }
@@ -1238,11 +1252,11 @@ function enviar(){
     verificaNInst();
 
     const CONFIG = getConfig();
-    if(!CONFIG) {
+    if (!CONFIG) {
         return;
     }
     var insts = getAllInst(CONFIG["nInst"]);
-    if(!insts) {
+    if (!insts) {
         return;
     }
     diagrama = new Estado(CONFIG, insts);
@@ -1267,8 +1281,8 @@ function verificaNInst() {
 
 
 function proximoFunctionN() {
-    if(!diagrama) return;
-    if(terminou) {
+    if (!diagrama) return;
+    if (terminou) {
         alert("Todas as instruções estão completadas.");
         return;
     }
@@ -1285,8 +1299,8 @@ function proximoFunctionN() {
 }
 
 function resultadobtn() {
-    if(!diagrama) return;
-    while(!terminou) {
+    if (!diagrama) return;
+    while (!terminou) {
         terminou = diagrama.executa_ciclo();
         atualizaTabelaEstadoInstrucaoHTML(diagrama.estadoInstrucoes);
         atualizaTabelaBufferReordenamentoHTML(diagrama.estadoInstrucoes);
@@ -1295,7 +1309,7 @@ function resultadobtn() {
         atualizaTabelaEstadoMenHTML(diagrama.estacaoRegistradores);
         atualizaClock(diagrama.clock);
         atualizaStatusEspeculacao(diagrama);
-        gerarTabelaEspeculacao(diagrama); 
+        gerarTabelaEspeculacao(diagrama);
     }
     gerarTabelaMetricas(diagrama);
 }
@@ -1303,19 +1317,19 @@ function resultadobtn() {
 var confirmou = false;
 var diagrama = null;
 var terminou = false;
-$(document).ready(function() {
+$(document).ready(function () {
 
 
-    $("#limpar").click(function() {
+    $("#limpar").click(function () {
         limparCampos();
     })
 
-    $("#carregaExemplo").click(function() {
+    $("#carregaExemplo").click(function () {
         carregaExemplo();
         confirmou = true;
     });
 
-    $("#confirmarNInst").click(function() {
+    $("#confirmarNInst").click(function () {
         confirmou = confirmarNInst();
     });
 
