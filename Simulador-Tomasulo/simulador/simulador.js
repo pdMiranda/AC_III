@@ -7,6 +7,15 @@
             "unidades": CONFIG["unidades"]    // número de ufs
         };
 
+        this.branchSpeculation = {
+            active: false,
+            branchIndex: null,
+            predictedTaken: false,
+            speculativeInstructions: []
+        };
+
+        this.branchSpeculationHistory = [];
+
         // cria o vetor de instrucoes
         this.estadoInstrucoes = [];
         for(let i = 0; i < this.configuracao["numInstrucoes"]; i++) {
@@ -89,17 +98,92 @@
         }
     }
 
-    getNovaInstrucao() {
-        // Funcao a busca de uma nova instrucao
-        // Percorre todo o vetor de instrucoes procurando por uma em que não ocorreu issue ainda. retornando a primeira que encontou
-        // Caso nao encontre nenhuma, retora undefined
+    isSpeculating() {
+        return this.branchSpeculation.active;
+    }
 
-        for (let i = 0; i < this.estadoInstrucoes.length; i++) {
-            const element = this.estadoInstrucoes[i];
-            if(element.issue == null)
-                return element;
+    startBranchSpeculation(branchIndex, predictedTaken) {
+        this.branchSpeculation.active = true;
+        this.branchSpeculation.branchIndex = branchIndex;
+        this.branchSpeculation.predictedTaken = predictedTaken;
+        this.branchSpeculation.speculativeInstructions = [];
+    }
+
+    addSpeculativeInstruction(instrucaoIndex) {
+        if (this.isSpeculating()) {
+            this.branchSpeculation.speculativeInstructions.push(instrucaoIndex);
         }
-        return undefined;
+    }
+
+    flushSpeculation() {
+        if (this.isSpeculating()) {
+            for (let idx of this.branchSpeculation.speculativeInstructions) {
+                // Remove issue/exeCompleta/write das instruções especulativas
+                this.estadoInstrucoes[idx].issue = null;
+                this.estadoInstrucoes[idx].exeCompleta = null;
+                this.estadoInstrucoes[idx].write = null;
+                this.estadoInstrucoes[idx].busy = false;
+            }
+            this.branchSpeculation.active = false;
+            this.branchSpeculation.branchIndex = null;
+            this.branchSpeculation.predictedTaken = false;
+            this.branchSpeculation.speculativeInstructions = [];
+        }
+    }
+
+    getNovaInstrucao() {
+        // Se não está especulando, retorna a próxima instrução normal
+        if (!this.isSpeculating()) {
+            for (let i = 0; i < this.estadoInstrucoes.length; i++) {
+                const element = this.estadoInstrucoes[i];
+                if(element.issue == null)
+                    return element;
+            }
+            return undefined;
+        } else {
+            // Se está especulando, só emite instruções após o desvio especulado
+            let branchIdx = this.branchSpeculation.branchIndex;
+            for (let i = branchIdx + 1; i < this.estadoInstrucoes.length; i++) {
+                const element = this.estadoInstrucoes[i];
+                if(element.issue == null) {
+                    this.addSpeculativeInstruction(i);
+                    return element;
+                }
+            }
+            return undefined;
+        }
+    }
+
+    issueNovaInstrucao() {
+        let novaInstrucao = this.getNovaInstrucao();
+
+        if (novaInstrucao) {
+            let ufInstrucao = this.verificaUFInstrucao(novaInstrucao.instrucao);
+            let UFParaUsar = this.getFUVazia(ufInstrucao);
+
+            if (UFParaUsar) {
+                // Se BEQ ou BNEZ, inicia especulação (sempre prevê "não desvia" para exemplo)
+                if ((novaInstrucao.instrucao.operacao === 'BEQ' || novaInstrucao.instrucao.operacao === 'BNEZ') && !this.isSpeculating()) {
+                    this.startBranchSpeculation(novaInstrucao.posicao, false); // false = prevê "não desvia"
+                    novaInstrucao.especulativa = false; // o próprio desvio não é especulativo
+                } else if (this.isSpeculating()) {
+                    novaInstrucao.especulativa = true; // instruções após o desvio são especulativas
+                    this.addSpeculativeInstruction(novaInstrucao.posicao);
+                } else {
+                    novaInstrucao.especulativa = false;
+                }
+
+                if ((UFParaUsar.tipoUnidade == 'Load') || (UFParaUsar.tipoUnidade == 'Store'))
+                    this.alocaFuMem(UFParaUsar, novaInstrucao.instrucao, novaInstrucao);
+                else
+                    this.alocaFU(UFParaUsar, novaInstrucao.instrucao, novaInstrucao);
+
+                novaInstrucao.issue = this.clock;
+
+                if ((UFParaUsar.tipoUnidade !== 'Store') && (UFParaUsar.operacao !== 'BEQ') && (UFParaUsar.operacao !== 'BNEZ'))
+                    this.escreveEstacaoRegistrador(novaInstrucao.instrucao, UFParaUsar.nome);
+            }
+        }
     }
 
     verificaUFInstrucao(instrucao) {
@@ -370,33 +454,6 @@
         return qtdInstrucaoNaoTerminada > 0 ? false : true;
     }
 
-    issueNovaInstrucao() {
-        // funcao da fase de issue do tomasulo
-
-        let novaInstrucao = this.getNovaInstrucao();  // busca uma nova instrucao
-
-        // se existe uma nova instrucao pra executar o issue
-        if (novaInstrucao) {
-            let ufInstrucao = this.verificaUFInstrucao(novaInstrucao.instrucao);  // verifica qual unidade essa instrucao usa
-            let UFParaUsar = this.getFUVazia(ufInstrucao);                        // pega a primeira unidade disponivel
-
-            // caso exista uma unidade livre, caso contrario, nao faz nada (bolha)
-            if (UFParaUsar) {
-                // se a unidade e de memoria, aloca uma unidade de memoria, caso contrario uma unidade normal
-                if ((UFParaUsar.tipoUnidade == 'Load') || (UFParaUsar.tipoUnidade == 'Store'))
-                    this.alocaFuMem(UFParaUsar, novaInstrucao.instrucao, novaInstrucao);
-                else
-                    this.alocaFU(UFParaUsar, novaInstrucao.instrucao, novaInstrucao);
-
-                // escreve em qual ciclo o issue aconteceu
-                novaInstrucao.issue = this.clock;
-
-                // caso a instrucao tenha escrita no registrador de destino, esqueve
-                if ((UFParaUsar.tipoUnidade !== 'Store') && (UFParaUsar.operacao !== 'BEQ') && (UFParaUsar.operacao !== 'BEQ'))
-                    this.escreveEstacaoRegistrador(novaInstrucao.instrucao, UFParaUsar.nome);
-            }
-        }
-    }
 
     executaInstrucao() {
         // funcao da fase de execucao do tomasulo
@@ -468,20 +525,39 @@
         for(let key in this.unidadesFuncionais) {
             const uf = this.unidadesFuncionais[key];
 
-            // caso a unidade esteja ocupada e o tempo for -1
             if (uf.ocupado === true) {
                 if (uf.tempo === -1) {
-                    uf.estadoInstrucao.write = this.clock;   //escreve em qual ciclo escreveu no registrador
+                    uf.estadoInstrucao.write = this.clock;
 
-                    // verifica qual é o nome que esta na estacao de registradores
                     let valorReg = this.estacaoRegistradores[uf.instrucao.registradorR];
-
-                    // se nenhuma outra uf vai escrever sobre o registrador, escreve nele
                     if (valorReg === uf.nome) {
                         this.estacaoRegistradores[uf.instrucao.registradorR] = 'VAL(' + uf.nome + ')';
                     }
 
-                    // libera as ufs que esta esperando essa terminar e desaloca essa uf
+                    // Se BEQ/BNEZ, resolve especulação
+                    if ((uf.operacao === 'BEQ' || uf.operacao === 'BNEZ') && this.isSpeculating()) {
+                        let realTaken = true; // Sempre desvia
+
+                        // Salva no histórico ANTES de limpar o branchSpeculation
+                        this.branchSpeculationHistory.push({
+                            branchIndex: this.branchSpeculation.branchIndex,
+                            predictedTaken: this.branchSpeculation.predictedTaken,
+                            speculativeInstructions: [...this.branchSpeculation.speculativeInstructions],
+                            status: (realTaken !== this.branchSpeculation.predictedTaken) ? "Falha (flush realizado)" : "Correta"
+                        });
+
+                        if (realTaken !== this.branchSpeculation.predictedTaken) {
+                            this.flushSpeculation();
+                            this.branchSpeculation.status = "Falha (flush realizado)";
+                        } else {
+                            this.branchSpeculation.status = "Correta";
+                            this.branchSpeculation.active = false;
+                            this.branchSpeculation.branchIndex = null;
+                            this.branchSpeculation.predictedTaken = false;
+                            this.branchSpeculation.speculativeInstructions = [];
+                        }
+                    }
+
                     this.liberaUFEsperandoResultado(uf);
                     this.desalocaUF(uf);
                 }
@@ -733,8 +809,8 @@ function atualizaTabelaEstadoInstrucaoHTML(tabelaInsts) {
 function atualizaTabelaBufferReordenamentoHTML(tabelaInsts) {
     for(let i in tabelaInsts) {
         const inst = tabelaInsts[i];
-        console.log("EXECUÇÃO COMPLETA INSTRUCAO TESTE", inst["busy"], inst["posicao"], inst["instrucao"].operacao);
-        $(`#${inst["posicao"]}_destiny`).text(inst["instrucao"].registradorR);
+        let espec = inst.especulativa ? " (especulativa)" : "";
+        $(`#${inst["posicao"]}_destiny`).text(inst["instrucao"].registradorR + espec);
 
         if (inst["issue"] != null) {            
             $(`#${inst["posicao"]}_estado`).text("Execute");
@@ -799,6 +875,29 @@ function atualizaTabelaEstadoMenHTML(men) {
 function atualizaClock(clock) {
     $("#clock").html("Ciclo: " + clock );
 
+}
+
+function atualizaStatusEspeculacao(diagrama) {
+    let espec = diagrama.branchSpeculation;
+    let status = "";
+    if (espec.active) {
+        status = `Especulação ativa: Previsto "${espec.predictedTaken ? "Desvia" : "Não desvia"}" no desvio I${espec.branchIndex}`;
+    } else if (espec.status) {
+        status = `Status da especulação: ${espec.status}`;
+    } else {
+        status = "Sem especulação ativa";
+    }
+    $("#statusEspeculacao").html(`<b>${status}</b>`);
+}
+
+function atualizaTabelaEstadoInstrucaoHTML(tabelaInsts) {
+    for(let i in tabelaInsts) {
+        const inst = tabelaInsts[i];
+        let espec = inst.especulativa ? " (especulativa)" : "";
+        $(`#i${inst["posicao"]}_is`).text((inst["issue"] ? inst["issue"] : "") + espec);
+        $(`#i${inst["posicao"]}_ec`).text(inst["exeCompleta"] ? inst["exeCompleta"] : "");
+        $(`#i${inst["posicao"]}_wr`).text(inst["write"] ? inst["write"] : "");
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -900,6 +999,68 @@ function gerarTabelaEstadoUFMem(diagrama) {
     }
     s += "</table>"
     $("#estadoMemUF").html(s);
+}
+
+function gerarTabelaEspeculacao(diagrama) {
+    let espec = diagrama.branchSpeculation;
+    let history = diagrama.branchSpeculationHistory || [];
+    let s = `
+        <h3>Status da Especulação de Desvio</h3>
+        <table class="table table-striped table-hover">
+            <tr>
+                <th>Status</th>
+                <th>Desvio (Instrução)</th>
+                <th>Previsão</th>
+                <th>Instruções Especulativas</th>
+            </tr>
+    `;
+
+    // Mostra histórico de todas as decisões
+    if (history.length > 0) {
+        for (let h of history) {
+            s += `
+                <tr>
+                    <td>${h.status}</td>
+                    <td>${h.branchIndex !== null ? "I" + h.branchIndex : "-"}</td>
+                    <td>${h.predictedTaken ? "Desvia" : "Não desvia"}</td>
+                    <td>${
+                        h.speculativeInstructions && h.speculativeInstructions.length > 0
+                            ? h.speculativeInstructions.map(i => "I" + i).join(", ")
+                            : "-"
+                    }</td>
+                </tr>
+            `;
+        }
+    } else {
+        // Se não há histórico, mostra linha padrão
+        s += `
+            <tr>
+                <td>Inativa</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+            </tr>
+        `;
+    }
+
+    // Mostra a especulação ativa, se houver
+    if (espec.active) {
+        s += `
+            <tr>
+                <td>Ativa</td>
+                <td>${espec.branchIndex !== null ? "I" + espec.branchIndex : "-"}</td>
+                <td>${espec.predictedTaken ? "Desvia" : "Não desvia"}</td>
+                <td>${
+                    espec.speculativeInstructions && espec.speculativeInstructions.length > 0
+                        ? espec.speculativeInstructions.map(i => "I" + i).join(", ")
+                        : "-"
+                }</td>
+            </tr>
+        `;
+    }
+
+    s += "</table>";
+    $("#tabelaEspeculacao").html(s);
 }
 
 function atualizaTabelaEstadoUFMemHTML(ufsMem) {
@@ -1059,41 +1220,37 @@ function verificaNInst() {
 }
 
 
- function proximoFunctionN() {
-     if(!diagrama) {
-         //alert("Envie primeiro");
-         return;
-     }
-     if(terminou) {
-         alert("Todas as instruções estão completadas.");
-         return;
-     }
-     // terminou = avancaCiclo(diagrama);
-     terminou = diagrama.executa_ciclo();
-     atualizaTabelaEstadoInstrucaoHTML(diagrama.estadoInstrucoes);
-     atualizaTabelaBufferReordenamentoHTML(diagrama.estadoInstrucoes);
-     atualizaTabelaEstadoUFMemHTML(diagrama.unidadesFuncionaisMemoria);
-     atualizaTabelaEstadoUFHTML(diagrama.unidadesFuncionais);
-     atualizaTabelaEstadoMenHTML(diagrama.estacaoRegistradores);
-     atualizaClock(diagrama.clock);
+function proximoFunctionN() {
+    if(!diagrama) return;
+    if(terminou) {
+        alert("Todas as instruções estão completadas.");
+        return;
+    }
+    terminou = diagrama.executa_ciclo();
+    atualizaTabelaEstadoInstrucaoHTML(diagrama.estadoInstrucoes);
+    atualizaTabelaBufferReordenamentoHTML(diagrama.estadoInstrucoes);
+    atualizaTabelaEstadoUFMemHTML(diagrama.unidadesFuncionaisMemoria);
+    atualizaTabelaEstadoUFHTML(diagrama.unidadesFuncionais);
+    atualizaTabelaEstadoMenHTML(diagrama.estacaoRegistradores);
+    atualizaClock(diagrama.clock);
+    atualizaStatusEspeculacao(diagrama);
+    gerarTabelaEspeculacao(diagrama);
+}
 
- }
-
- function resultadobtn() {
-     if(!diagrama) {
-         //alert("Envie primeiro");
-         return;
-     }
-     while(!terminou) {
-         terminou = diagrama.executa_ciclo();
-         atualizaTabelaEstadoInstrucaoHTML(diagrama.estadoInstrucoes);
-         atualizaTabelaBufferReordenamentoHTML(diagrama.estadoInstrucoes);
-         atualizaTabelaEstadoUFMemHTML(diagrama.unidadesFuncionaisMemoria);
-         atualizaTabelaEstadoUFHTML(diagrama.unidadesFuncionais);
-         atualizaTabelaEstadoMenHTML(diagrama.estacaoRegistradores);
-         atualizaClock(diagrama.clock);
-     }
- }
+function resultadobtn() {
+    if(!diagrama) return;
+    while(!terminou) {
+        terminou = diagrama.executa_ciclo();
+        atualizaTabelaEstadoInstrucaoHTML(diagrama.estadoInstrucoes);
+        atualizaTabelaBufferReordenamentoHTML(diagrama.estadoInstrucoes);
+        atualizaTabelaEstadoUFMemHTML(diagrama.unidadesFuncionaisMemoria);
+        atualizaTabelaEstadoUFHTML(diagrama.unidadesFuncionais);
+        atualizaTabelaEstadoMenHTML(diagrama.estacaoRegistradores);
+        atualizaClock(diagrama.clock);
+        atualizaStatusEspeculacao(diagrama);
+        gerarTabelaEspeculacao(diagrama); 
+    }
+}
 
 var confirmou = false;
 var diagrama = null;
@@ -1116,6 +1273,6 @@ $(document).ready(function() {
 
     // $("#enviar").click(enviar());
 
-    $("#proximo").click(proximoFunctionN());
-    $("#resultado").click(resultadobtn());
+    $("#proximo").click(proximoFunctionN);
+    $("#resultado").click(resultadobtn);
 });
