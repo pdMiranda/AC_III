@@ -9,6 +9,7 @@
         
         this.branchSpeculationHistory = [];
         this.branchHistory = {}
+        this.globalBranchHistory = undefined;
 
         // salva as configurações passadas
         this.configuracao = {
@@ -167,7 +168,7 @@
                 // Se BEQ ou BNEZ, inicia especulação (sempre prevê "não desvia" para exemplo)
                 if ((novaInstrucao.instrucao.operacao === 'BEQ' || novaInstrucao.instrucao.operacao === 'BNEZ') && !this.isSpeculating()) {
                     let idx = novaInstrucao.posicao;
-                    let predicted = this.branchHistory[idx] !== undefined ? this.branchHistory[idx] : false; // default: nao desvia
+                    let predicted = this.globalBranchHistory !== undefined ? this.globalBranchHistory : false; // default: nao desvia
                     this.startBranchSpeculation(idx, predicted);
                     novaInstrucao.especulativa = false;
                 } else if (this.isSpeculating()) {
@@ -543,6 +544,7 @@
                         let realTaken = true; // Sempre desvia (apenas primeiro exemplo)
 
                         this.branchHistory[this.branchSpeculation.branchIndex] = realTaken;
+                        this.globalBranchHistory = realTaken;
 
                         // Salva no histórico ANTES de limpar o branchSpeculation
                         this.branchSpeculationHistory.push({
