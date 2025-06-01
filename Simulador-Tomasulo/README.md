@@ -4,7 +4,7 @@ Simulador desenvolvido para demonstração do algoritmo de Tomasulo,
 demonstrando o funcionamento de arquiteturas superescalares com execução fora de ordem, 
 buffer de reordenamento e especulação de desvios.
 
-## Execução: 
+### Execução: 
 
 No VSCode, baixe a extensão Live Server e rode por ela o index.html
 
