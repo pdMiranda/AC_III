@@ -2,32 +2,31 @@
     "config": {
         "ciclos": {
             "ciclosInt": 1,
-            "ciclosLoad": 2,
-            "ciclosStore": 2,
             "ciclosFPAdd": 2,
-            "ciclosFPMul": 10,
-            "ciclosFPDiv": 40
+            "ciclosFPMul": 3,
+            "ciclosFPDiv": 20
         },
         "unidades": {
-            "fuLoad": 6,
-            "fuStore": 3,
-            "fuInt": 3,
-            "fuFPAdd": 3,
-            "fuFPMul": 2
+            "fuLoad": 1,
+            "fuStore": 1,
+            "fuInt": 1,
+            "fuFPAdd": 1,
+            "fuFPMul": 1
         }
     },
+
     "insts": [
         {
             "D": "LD",
             "R": "F6",
-            "S": "34",
+            "S": "0",
             "T": "R1"
         },
         {
             "D": "LD",
             "R": "F2",
-            "S": "45",
-            "T": "R3"
+            "S": "4",
+            "T": "R2"
         },
         {
             "D": "MULTD",
@@ -39,19 +38,37 @@
             "D": "SUBD",
             "R": "F8",
             "S": "F6",
-            "T": "F2"
+            "T": "F0"
         },
         {
             "D": "DIVD",
             "R": "F10",
-            "S": "F0",
-            "T": "F6"
+            "S": "F8",
+            "T": "F2"
         },
         {
             "D": "ADDD",
-            "R": "F6",
-            "S": "F8",
-            "T": "F2"
+            "R": "F4",
+            "S": "F10",
+            "T": "F6"
+        },
+        {
+            "D": "SD",
+            "R": "F4",
+            "S": "8",
+            "T": "R3"
+        },
+        {
+            "D": "DADDUI",
+            "R": "R1",
+            "S": "R1",
+            "T": "-8"
+        },
+        {
+            "D": "BNEZ",
+            "R": "R1",
+            "S": "LOOP",
+            "T": ""
         }
     ]
 }
