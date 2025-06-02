@@ -1172,7 +1172,6 @@ function carregaExemplo(exN = false) {
     }
     confirmou = true;
     $.getJSON(`./presets/ex${exN}.json`, function () {
-        console.log("Lido :3");
 
     }).fail(function () {
         alert("Não foi possivel carregar o exemplo.")
@@ -1248,7 +1247,6 @@ function enviar() {
     $("#tabelaMetricas").html("");
     $("#tabelaEspeculacao").html("");
 
-    console.log("aqui");
     verificaNInst();
 
     const CONFIG = getConfig();
@@ -1264,14 +1262,13 @@ function enviar() {
     gerarTabelaBufferReordenamento(diagrama);
     atualizaTabelaEstadoInstrucaoHTML(diagrama["tabela"])
     gerarTabelaEstadoUFHTML(diagrama);
-    console.log('diagrama UF porra', diagrama["unidadesFuncionais"]);
     atualizaTabelaEstadoUFHTML(diagrama["unidadesFuncionais"]);
     gerarTabelaEstadoMenHTML(diagrama);
     gerarTabelaEstadoUFMem(diagrama);
     atualizaTabelaEstadoUFMemHTML(diagrama["ufMem"]);
     atualizaTabelaBufferReordenamentoHTML(diagrama["ufMem"]);
-    $('#configuracoesview').hide('slow');
-    $('#simuladorview').show('slow');
+    $('#configuracoesview').hide();
+    $('#simuladorview').show();
 }
 
 function verificaNInst() {

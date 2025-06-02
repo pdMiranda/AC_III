@@ -34,6 +34,37 @@ label {
     color: #333;
 }
 
+.btn-primary {
+  background-color: darkorange;
+  border-color: darkorange;
+  color: white; 
+}
+
+.btn-primary:hover {
+    background-color:  #FF5722;
+    border-color:  #FF5722;
+}
+
+.btn-primary:focus {
+        background-color:  #FF5722;
+        border-color:  #FF5722;
+}
+
+.accordion-button{
+    color: white !important;
+    background-color: darkorange !important;
+    border-color: darkorange !important;
+}
+
+.alert-info{
+    background-color: #d1ecf1 !important;
+    color: #0c5460 !important;
+    border-color: #bee5eb !important;
+}
+
+.card-header{
+    color: darkorange !important; 
+}
 
 input::-webkit-input-placeholder {
     color: #333;
@@ -43,6 +74,44 @@ input::-webkit-input-placeholder {
     color: #333;
 }
 
+.btn-success{
+    background-color: #FF7043;
+    border-color: #FF7043;
+    color: white; 
+}
+
+.btn-success:hover {
+    background-color: #FF5722;
+    border-color: #FF5722;
+}
+
+.btn-success:focus {
+    background-color: #FF5722;
+    border-color: #FF5722;
+}
+
+.btn-secondary{
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white; 
+}
+
+.btn-outline-primary {
+    color: darkorange;
+    border-color: darkorange;
+}
+
+.btn-outline-secondary {
+    color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-outline-primary:hover {
+    color: white;
+    background-color: darkorange;
+    border-color: darkorange;
+}
+
 .floatbuttont {
     position: fixed;
     bottom: 85px;
@@ -50,4 +119,8 @@ input::-webkit-input-placeholder {
     float: right;
     z-index: 30000000;
     padding: 10px 11px;
+}
+
+h3{
+    color: darkorange !important;
 }

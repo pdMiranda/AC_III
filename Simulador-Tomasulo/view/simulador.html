@@ -1,14 +1,13 @@
 <style>
     .table>:not(caption)>*>* {
-        padding:0 !important;
-        color:black !important;
+        padding:0 ;
+        color:black;
     }
     h3 {
-        color:#4e73df !important;
+        color:#4e73df;
     }
     h4, .h4 {
         font-size: 1.5rem;
-        color: cornflowerblue !important;
     }
 </style>
 <div class="card ">
@@ -18,14 +17,14 @@
     <div class="card-body">
        <div class="row">
            <div class="btn-group col-md-6">
-               <button type="button" class="btn btn-outline-secondary" onclick="$('#simuladorview').hide('show');$('#configuracoesview').show('slow')">
-                   <i class="fas fa-chevron-left"></i> Voltar
+               <button type="button" class="btn btn-outline-secondary" onclick="$('#simuladorview').hide('show');$('#configuracoesview').show()">
+                    Voltar
                </button>
                <button type="button" class="btn btn-outline-primary" id="resultado" onclick="resultadobtn()">
-                   Resultado <i class="fas fa-bolt"></i>
+                   Resultado 
                </button>
                <button type="button" class="btn btn-success text-white"
-                       onclick="proximoFunctionN()" id="proximo">Proximo <i class="fa fa-arrow-right"></i>
+                       onclick="proximoFunctionN()" id="proximo">Proximo 
                </button>
            </div>
            <div class=" text-center  col-md-6">

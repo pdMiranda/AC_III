@@ -23,21 +23,3 @@ function include(file, elementIdToSetContent) {
             document.getElementById(elementIdToSetContent).innerHTML = content;
         });
 }
-
-function screenshot(elm) {
-    $(elm).html('<i class="fas fa-sync fa-spin"></i> Capturando...');
-    html2canvas(document.getElementById("mainprintscreen")).then(canvas => {
-        var img = canvas.toDataURL("image/png");
-        var dlLink = document.createElement('a');
-        dlLink.download = "screenshot.png";
-        dlLink.href = img;
-        dlLink.dataset.downloadurl = ["image/png", dlLink.download, dlLink.href].join(':');
-        document.body.appendChild(dlLink);
-        dlLink.click();
-        document.body.removeChild(dlLink);
-        $(elm).addClass('btn-success').removeClass('btn-primary').removeClass('pulse-button').html('<i class="fas fa-check"></i> Sucesso!');
-        setTimeout(function (){
-            $(elm).removeClass('btn-success').addClass('btn-primary').addClass('pulse-button').html('<i class="fas fa-camera"></i> Capturar');
-        }, 2000);
-    });
-}
