@@ -35,35 +35,36 @@ label {
 }
 
 .btn-primary {
-  background-color: darkorange;
-  border-color: darkorange;
-  color: white; 
+    background-color: white;
+    border-color: black;
+    color: black;
 }
 
 .btn-primary:hover {
-    background-color:  #FF5722;
-    border-color:  #FF5722;
+    background-color:  black;
+    border-color:  white;
+    color: white;
 }
 
 .btn-primary:focus {
-        background-color:  #FF5722;
-        border-color:  #FF5722;
+    background-color: black;
+    border-color:  white;
 }
 
 .accordion-button{
     color: white !important;
-    background-color: darkorange !important;
+    background-color: gray !important ;
     border-color: darkorange !important;
 }
 
 .alert-info{
-    background-color: #d1ecf1 !important;
-    color: #0c5460 !important;
-    border-color: #bee5eb !important;
+    background-color: darkgray !important;
+    color: white !important;
+    border-color: darkgray !important;
 }
 
 .card-header{
-    color: darkorange !important; 
+    color: black !important; 
 }
 
 input::-webkit-input-placeholder {
@@ -75,19 +76,21 @@ input::-webkit-input-placeholder {
 }
 
 .btn-success{
-    background-color: #FF7043;
-    border-color: #FF7043;
-    color: white; 
+    background-color: black;
+    border-color: black;
+    color: white !important; 
 }
 
 .btn-success:hover {
-    background-color: #FF5722;
-    border-color: #FF5722;
+    background-color: white;
+    border-color: black;
+    color: black !important;
 }
 
 .btn-success:focus {
-    background-color: #FF5722;
-    border-color: #FF5722;
+    background-color: white;
+    border-color: black;
+    color: black !important;
 }
 
 .btn-secondary{
@@ -96,9 +99,22 @@ input::-webkit-input-placeholder {
     color: white; 
 }
 
+.btn-secondary:hover {
+    background-color: lightgrey;
+    border-color: darkgray;
+    color: black !important; 
+}
+
 .btn-outline-primary {
-    color: darkorange;
-    border-color: darkorange;
+    color: white;
+    background-color: purple;
+    border-color: purple;
+}
+
+.btn-outline-primary:hover {
+    color: black;
+    background-color: snow;
+    border-color: black;
 }
 
 .btn-outline-secondary {
@@ -106,11 +122,6 @@ input::-webkit-input-placeholder {
     border-color: #6c757d;
 }
 
-.btn-outline-primary:hover {
-    color: white;
-    background-color: darkorange;
-    border-color: darkorange;
-}
 
 .floatbuttont {
     position: fixed;
@@ -122,5 +133,5 @@ input::-webkit-input-placeholder {
 }
 
 h3{
-    color: darkorange !important;
+    color: black !important;
 }

@@ -1033,9 +1033,9 @@ function gerarTabelaEspeculacao(diagrama) {
         <table class="table table-striped table-hover">
             <tr>
                 <th>Status</th>
-                <th>Desvio (Instrução)</th>
+                <th>Desvio</th>
                 <th>Previsão</th>
-                <th>Instruções Especulativas</th>
+                <th>Especulações</th>
             </tr>
     `;
 
@@ -1099,18 +1099,16 @@ function gerarTabelaMetricas(diagrama) {
     const ciclosDeBolha = diagrama.ciclosSemIssue !== undefined ? diagrama.ciclosSemIssue : (ciclosTotais - instrucoesCompletas);
 
     let s = `
-        <h3>Métricas de Desempenho</h3>
+        <h3>Métricas</h3>
         <table class="table table-striped table-hover">
             <tr>
                 <th>IPC</th>
-                <th>Ciclos Totais</th>
-                <th>Instruções Completas</th>
-                <th>Ciclos de Bolha</th>
+                <th>Ciclos</th>
+                <th>Bolha</th>
             </tr>
             <tr>
                 <td>${ipc}</td>
                 <td>${ciclosTotais}</td>
-                <td>${instrucoesCompletas}</td>
                 <td>${ciclosDeBolha}</td>
             </tr>
         </table>
