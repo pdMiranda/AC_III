@@ -929,8 +929,8 @@ function atualizaTabelaEstadoInstrucaoHTML(tabelaInsts) {
 function gerarTabelaEstadoInstrucaoHTML(diagrama) {
     var s = (
         "<h3>Status das instruções</h3><table class='table table-striped table-hover'>"
-        + "<tr><th></th><th>Instrução</th><th>i</th><th>j</th>"
-        + "<th>k</th><th>Issue</th><th>Exec. Completa</th><th>Write Result</th></tr>"
+        + "<tr><th></th><th>Instruction</th><th>i</th><th>j</th>"
+        + "<th>k</th><th>Issue</th><th>Complete execution</th><th>Write Result</th></tr>"
     );
 
     for (let i = 0; i < diagrama.configuracao["numInstrucoes"]; ++i) {
