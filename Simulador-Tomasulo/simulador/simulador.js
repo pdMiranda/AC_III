@@ -132,15 +132,46 @@ Estado = class {
 
     flushSpeculation() {
         if (this.isSpeculating()) {
-            for (let idx of this.branchSpeculation.speculativeInstructions) {
-                // Remove issue/exeCompleta/write das instruções especulativas
-                this.estadoInstrucoes[idx].issue = null;
-                this.estadoInstrucoes[idx].exeCompleta = null;
-                this.estadoInstrucoes[idx].write = null;
-                this.estadoInstrucoes[idx].busy = false;
+            // Armazena os nomes das UFs que foram atribuídas a instruções especulativas
+            const flushedFUNames = new Set();
 
-                this.estadoInstrucoes[idx].flushed = true;
+            for (let idx of this.branchSpeculation.speculativeInstructions) {
+                let flushedInstState = this.estadoInstrucoes[idx];
+                flushedInstState.issue = null;
+                flushedInstState.exeCompleta = null;
+                flushedInstState.write = null;
+                flushedInstState.busy = false;
+                flushedInstState.flushed = true; // Marca como descartada
+
+                // Encontra e desaloca a UF associada a esta instrução descartada
+                // Verifica unidades funcionais normais
+                for (let key in this.unidadesFuncionais) {
+                    let uf = this.unidadesFuncionais[key];
+                    if (uf.estadoInstrucao && uf.estadoInstrucao.posicao === flushedInstState.posicao) {
+                        flushedFUNames.add(uf.nome);
+                        this.desalocaUF(uf); // Desaloca a UF
+                        break;
+                    }
+                }
+                // Verifica unidades funcionais de memória
+                for (let key in this.unidadesFuncionaisMemoria) {
+                    let ufMem = this.unidadesFuncionaisMemoria[key];
+                    if (ufMem.estadoInstrucao && ufMem.estadoInstrucao.posicao === flushedInstState.posicao) {
+                        flushedFUNames.add(ufMem.nome);
+                        this.desalocaUFMem(ufMem); // Desaloca a UF
+                        break;
+                    }
+                }
             }
+
+            // Após desalocar as UFs, limpa as entradas correspondentes no estacaoRegistradores
+            for (let regName in this.estacaoRegistradores) {
+                if (flushedFUNames.has(this.estacaoRegistradores[regName])) {
+                    this.estacaoRegistradores[regName] = null; // Limpa a entrada do registrador
+                }
+            }
+
+            // Reinicia o estado da especulação de desvio
             this.branchSpeculation.active = false;
             this.branchSpeculation.branchIndex = null;
             this.branchSpeculation.predictedTaken = false;
@@ -153,14 +184,14 @@ Estado = class {
         if (!this.isSpeculating()) {
             for (let i = 0; i < this.estadoInstrucoes.length; i++) {
                 const inst = this.estadoInstrucoes[i];
-                if (inst.issue == null) return inst;
+                if (inst.issue == null && !inst.flushed) return inst;
             }
             return undefined;
         } else {
             // Especulação: emitir a partir do target previsto
             for (let i = this.branchSpeculation.predictedTarget; i < this.estadoInstrucoes.length; i++) {
                 const inst = this.estadoInstrucoes[i];
-                if (inst.issue == null) {
+                if (inst.issue == null && !inst.flushed) {
                     this.addSpeculativeInstruction(i);
                     return inst;
                 }
@@ -465,15 +496,14 @@ Estado = class {
     }
 
     verificaSeJaTerminou() {
-        // funcao que verifica se todas as isntrucoes executaram
-        // percorre todas as instrucoes e conta quntas ainda nao escreveram os resultados
-        // se o numero for maior que 0, ainda tem instrucao pendente
         let qtdInstrucaoNaoTerminada = 0;
         for (let i = 0; i < this.estadoInstrucoes.length; i++) {
             const element = this.estadoInstrucoes[i];
 
-            if (element.write === null)
+            // Uma instrução não está terminada se seu 'write' é null E ela não foi descartada (flushed)
+            if (element.write === null && !element.flushed) {
                 qtdInstrucaoNaoTerminada++;
+            }
         }
 
         return qtdInstrucaoNaoTerminada > 0 ? false : true;
