@@ -1,50 +1,24 @@
 {
-    "config": {
-        "ciclos": {
-            "ciclosInt": 1,
-            "ciclosFPAdd": 2,
-            "ciclosFPMul": 10,
-            "ciclosFPDiv": 12
-        },
-        "unidades": {
-            "fuLoad": 2,
-            "fuStore": 1,
-            "fuInt": 2,
-            "fuFPAdd": 2,
-            "fuFPMul": 1
-        }
+  "config": {
+    "ciclos": {
+      "ciclosInt": 1,
+      "ciclosFPAdd": 2,
+      "ciclosFPMul": 3,
+      "ciclosFPDiv": 4
     },
-
-    "insts": [
-        {
-            "D": "LD",
-            "R": "F2",
-            "S": "0",
-            "T": "R1"
-        },
-        {
-            "D": "ADDD",
-            "R": "F2",
-            "S": "F6",
-            "T": "F6"
-        },
-        {
-            "D": "MULTD",
-            "R": "F4",
-            "S": "F2",
-            "T": "F2"
-        },
-        {
-            "D": "SUBD",
-            "R": "F6",
-            "S": "F2",
-            "T": "F2"
-        },
-        {
-            "D": "SUBD",
-            "R": "F2",
-            "S": "F8",
-            "T": "F8"
-        }
-    ]
+    "unidades": {
+      "fuLoad": 1,
+      "fuStore": 1,
+      "fuInt": 1,
+      "fuFPAdd": 1,
+      "fuFPMul": 1
+    }
+  },
+  "insts": [
+    { "D": "LD", "R": "F2", "S": "0", "T": "R1" },
+    { "D": "BEQ", "R": "R3", "S": "R3", "T": "2" },
+    { "D": "MULTD", "R": "F4", "S": "F2", "T": "F2" },
+    { "D": "ADDD", "R": "F6", "S": "F4", "T": "F2" },
+    { "D": "SD", "R": "F6", "S": "8", "T": "R4" }
+  ]
 }

@@ -4,7 +4,8 @@ Estado = class {
             active: false,
             branchIndex: null,
             predictedTaken: false,
-            speculativeInstructions: []
+            speculativeInstructions: [],
+            predictedTarget: null
         };
 
         this.branchSpeculationHistory = [];
@@ -107,10 +108,20 @@ Estado = class {
     }
 
     startBranchSpeculation(branchIndex, predictedTaken) {
+        const instrucao = this.estadoInstrucoes[branchIndex].instrucao;
+
         this.branchSpeculation.active = true;
         this.branchSpeculation.branchIndex = branchIndex;
         this.branchSpeculation.predictedTaken = predictedTaken;
         this.branchSpeculation.speculativeInstructions = [];
+
+        // Definir índice de destino da predição
+        if (predictedTaken) {
+            let targetOffset = parseInt(instrucao.T);
+            this.branchSpeculation.predictedTarget = branchIndex + targetOffset;
+        } else {
+            this.branchSpeculation.predictedTarget = branchIndex + 1;
+        }
     }
 
     addSpeculativeInstruction(instrucaoIndex) {
@@ -127,31 +138,31 @@ Estado = class {
                 this.estadoInstrucoes[idx].exeCompleta = null;
                 this.estadoInstrucoes[idx].write = null;
                 this.estadoInstrucoes[idx].busy = false;
+
+                this.estadoInstrucoes[idx].flushed = true;
             }
             this.branchSpeculation.active = false;
             this.branchSpeculation.branchIndex = null;
             this.branchSpeculation.predictedTaken = false;
             this.branchSpeculation.speculativeInstructions = [];
         }
+        this.atualizaHTMLPosFlush = true;
     }
 
     getNovaInstrucao() {
-        // Se não está especulando, retorna a próxima instrução normal
         if (!this.isSpeculating()) {
             for (let i = 0; i < this.estadoInstrucoes.length; i++) {
-                const element = this.estadoInstrucoes[i];
-                if (element.issue == null)
-                    return element;
+                const inst = this.estadoInstrucoes[i];
+                if (inst.issue == null) return inst;
             }
             return undefined;
         } else {
-            // Se está especulando, só emite instruções após o desvio especulado
-            let branchIdx = this.branchSpeculation.branchIndex;
-            for (let i = branchIdx + 1; i < this.estadoInstrucoes.length; i++) {
-                const element = this.estadoInstrucoes[i];
-                if (element.issue == null) {
+            // Especulação: emitir a partir do target previsto
+            for (let i = this.branchSpeculation.predictedTarget; i < this.estadoInstrucoes.length; i++) {
+                const inst = this.estadoInstrucoes[i];
+                if (inst.issue == null) {
                     this.addSpeculativeInstruction(i);
-                    return element;
+                    return inst;
                 }
             }
             return undefined;
@@ -612,6 +623,12 @@ Estado = class {
         console.log('Estado registradores:');
         console.log(JSON.stringify(this.estacaoRegistradores, null, 2));
 
+        if (this.atualizaHTMLPosFlush) {
+            atualizaTabelaEstadoInstrucaoHTML(this.estadoInstrucoes);
+            atualizaTabelaBufferReordenamentoHTML(this.estadoInstrucoes);
+            this.atualizaHTMLPosFlush = false;
+        }
+
         // retorna se a execucao de todas as instrucoes acabou ou nao
         return this.verificaSeJaTerminou();
     }
@@ -821,59 +838,50 @@ function getUnidadeInstrucao(instrucao) {
 
 // -----------------------------------------------------------------------------
 
-function atualizaTabelaEstadoInstrucaoHTML(tabelaInsts) {
-    for (let i in tabelaInsts) {
-        const inst = tabelaInsts[i];
-        $(`#i${inst["posicao"]}_is`).text(inst["issue"] ? inst["issue"] : "");
-        $(`#i${inst["posicao"]}_ec`).text(inst["exeCompleta"] ? inst["exeCompleta"] : "");
-        $(`#i${inst["posicao"]}_wr`).text(inst["write"] ? inst["write"] : "");
-    }
-}
-
 function atualizaTabelaBufferReordenamentoHTML(tabelaInsts) {
     for (let i in tabelaInsts) {
         const inst = tabelaInsts[i];
+
+        // Se a instrução foi descartada (flush)
+        if (inst.flushed) {
+            $(`#${inst.posicao}_estado`).text("Flush");
+            $(`#${inst.posicao}_busy`).text("não");
+            $(`#${inst.posicao}_destiny`).text("-");
+            $(`#${inst.posicao}_value`).text("Instrução descartada");
+            continue;
+        }
+
         let espec = inst.especulativa ? " (especulativa)" : "";
-        $(`#${inst["posicao"]}_destiny`).text(inst["instrucao"].registradorR + espec);
+        $(`#${inst.posicao}_destiny`).text(inst["instrucao"].registradorR + espec);
 
         if (inst["issue"] != null) {
-            $(`#${inst["posicao"]}_estado`).text("Execute");
-            $(`#${inst["posicao"]}_busy`).text("sim");
+            $(`#${inst.posicao}_estado`).text("Execute");
+            $(`#${inst.posicao}_busy`).text("sim");
         }
 
         if (inst["exeCompleta"] != null) {
-            $(`#${inst["posicao"]}_estado`).text("Write Result");
+            $(`#${inst.posicao}_estado`).text("Write Result");
 
             if (inst["instrucao"].operacao == "SD" || inst["instrucao"].operacao == "LD") {
-
-                $(`#${inst["posicao"]}_value`).text("Mem[" + inst["instrucao"].registradorS + " + Regs[" + inst["instrucao"].registradorT + "]]");
-
-            } else if (inst["instrucao"].operacao == "ADDD" || inst["instrucao"].operacao == "ADD" || inst["instrucao"].operacao == "DADDUI") {
-
-                $(`#${inst["posicao"]}_value`).text(inst["instrucao"].registradorS + " + " + inst["instrucao"].registradorT);
-
+                $(`#${inst.posicao}_value`).text("Mem[" + inst["instrucao"].registradorS + " + Regs[" + inst["instrucao"].registradorT + "]]");
+            } else if (["ADDD", "ADD", "DADDUI"].includes(inst["instrucao"].operacao)) {
+                $(`#${inst.posicao}_value`).text(inst["instrucao"].registradorS + " + " + inst["instrucao"].registradorT);
             } else if (inst["instrucao"].operacao == "SUBD") {
-
-                $(`#${inst["posicao"]}_value`).text(inst["instrucao"].registradorS + " - " + inst["instrucao"].registradorT);
-
+                $(`#${inst.posicao}_value`).text(inst["instrucao"].registradorS + " - " + inst["instrucao"].registradorT);
             } else if (inst["instrucao"].operacao == "MULTD") {
-
-                $(`#${inst["posicao"]}_value`).text(inst["instrucao"].registradorS + " * " + inst["instrucao"].registradorT);
-
+                $(`#${inst.posicao}_value`).text(inst["instrucao"].registradorS + " * " + inst["instrucao"].registradorT);
             } else if (inst["instrucao"].operacao == "DIVD") {
-
-                $(`#${inst["posicao"]}_value`).text(inst["instrucao"].registradorS + " / " + inst["instrucao"].registradorT);
-
+                $(`#${inst.posicao}_value`).text(inst["instrucao"].registradorS + " / " + inst["instrucao"].registradorT);
             }
         }
 
         if (inst["write"] != null) {
-            $(`#${inst["posicao"]}_estado`).text("Commit");
-            $(`#${inst["posicao"]}_busy`).text("não");
+            $(`#${inst.posicao}_estado`).text("Commit");
+            $(`#${inst.posicao}_busy`).text("não");
         }
 
-        $(`#i${inst["posicao"]}_ec`).text(inst["exeCompleta"] ? inst["exeCompleta"] : "");
-        $(`#i${inst["posicao"]}_wr`).text(inst["write"] ? inst["write"] : "");
+        $(`#i${inst.posicao}_ec`).text(inst["exeCompleta"] ? inst["exeCompleta"] : "");
+        $(`#i${inst.posicao}_wr`).text(inst["write"] ? inst["write"] : "");
     }
 }
 
@@ -917,13 +925,20 @@ function atualizaStatusEspeculacao(diagrama) {
 function atualizaTabelaEstadoInstrucaoHTML(tabelaInsts) {
     for (let i in tabelaInsts) {
         const inst = tabelaInsts[i];
+
+        if (inst.flushed) {
+            $(`#i${inst.posicao}_is`).text("Flush");
+            $(`#i${inst.posicao}_ec`).text("-");
+            $(`#i${inst.posicao}_wr`).text("-");
+            continue;
+        }
+
         let espec = inst.especulativa ? " (especulativa)" : "";
-        $(`#i${inst["posicao"]}_is`).text((inst["issue"] ? inst["issue"] : "") + espec);
-        $(`#i${inst["posicao"]}_ec`).text(inst["exeCompleta"] ? inst["exeCompleta"] : "");
-        $(`#i${inst["posicao"]}_wr`).text(inst["write"] ? inst["write"] : "");
+        $(`#i${inst.posicao}_is`).text((inst["issue"] ? inst["issue"] : "") + espec);
+        $(`#i${inst.posicao}_ec`).text(inst["exeCompleta"] ? inst["exeCompleta"] : "");
+        $(`#i${inst.posicao}_wr`).text(inst["write"] ? inst["write"] : "");
     }
 }
-
 // -----------------------------------------------------------------------------
 
 function gerarTabelaEstadoInstrucaoHTML(diagrama) {
@@ -1086,17 +1101,17 @@ function gerarTabelaEspeculacao(diagrama) {
 }
 
 function gerarTabelaMetricas(diagrama) {
-    // Total de ciclos
     const ciclosTotais = diagrama.clock;
 
-    // Total de instruções realmente completadas (não especulativas descartadas)
-    const instrucoesCompletas = diagrama.estadoInstrucoes.filter(i => i.write !== null).length;
+    const instrucoesValidas = diagrama.estadoInstrucoes.filter(i =>
+        i.write !== null && !i.flushed
+    ).length;
 
-    // IPC (Instruções por ciclo)
-    const ipc = (ciclosTotais > 0) ? (instrucoesCompletas / ciclosTotais).toFixed(3) : "-";
+    const ipc = (ciclosTotais > 0) ? (instrucoesValidas / ciclosTotais).toFixed(3) : "-";
 
-    // Ciclos de bolha: ciclos em que nenhuma instrução foi emitida (mais fiel ao pipeline)
-    const ciclosDeBolha = diagrama.ciclosSemIssue !== undefined ? diagrama.ciclosSemIssue : (ciclosTotais - instrucoesCompletas);
+    const ciclosDeBolha = diagrama.ciclosSemIssue !== undefined
+        ? diagrama.ciclosSemIssue
+        : (ciclosTotais - instrucoesValidas);
 
     let s = `
         <h3>Métricas</h3>

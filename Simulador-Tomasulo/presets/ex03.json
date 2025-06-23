@@ -1,68 +1,29 @@
 {
-    "config": {
-        "ciclos": {
-            "ciclosInt": 3,
-            "ciclosFPAdd": 8,
-            "ciclosFPMul": 10,
-            "ciclosFPDiv": 15
-        },
-        "unidades": {
-            "fuLoad": 6,
-            "fuStore": 3,
-            "fuInt": 3,
-            "fuFPAdd": 3,
-            "fuFPMul": 2
-        }
+  "config": {
+    "ciclos": {
+      "ciclosInt": 1,
+      "ciclosFPAdd": 2,
+      "ciclosFPMul": 2,
+      "ciclosFPDiv": 4
     },
-
-    "insts": [
-        {
-            "D": "ADD",
-            "R": "R2",
-            "S": "R0",
-            "T": "R1"
-        },
-        {
-            "D": "LD",
-            "R": "F2",
-            "S": "0",
-            "T": "R2"
-        },
-        {
-            "D": "MULTD",
-            "R": "F0",
-            "S": "F2",
-            "T": "F2"
-        },
-        {
-            "D": "SUBD",
-            "R": "F0",
-            "S": "F4",
-            "T": "F2"
-        },
-        {
-            "D": "DIVD",
-            "R": "F10",
-            "S": "F4",
-            "T": "F6"
-        },
-        {
-            "D": "ADDD",
-            "R": "F6",
-            "S": "F4",
-            "T": "F2"
-        },
-        {
-            "D": "SD",
-            "R": "F6",
-            "S": "0",
-            "T": "R2"
-        },
-        {
-            "D": "BEQ",
-            "R": "R2",
-            "S": "R4",
-            "T": "ini"
-        }
-    ]
+    "unidades": {
+      "fuLoad": 1,
+      "fuStore": 1,
+      "fuInt": 1,
+      "fuFPAdd": 1,
+      "fuFPMul": 1
+    }
+  },
+  "insts": [
+    { "D": "BEQ", "R": "R1", "S": "R2", "T": "4" },
+    { "D": "LD", "R": "F2", "S": "0", "T": "R1" },
+    { "D": "LD", "R": "F4", "S": "4", "T": "R2" },
+    { "D": "ADDD", "R": "F6", "S": "F2", "T": "F4" },
+    { "D": "MULTD", "R": "F8", "S": "F6", "T": "F2" },
+    { "D": "DIVD", "R": "F10", "S": "F8", "T": "F6" },
+    { "D": "DADDUI", "R": "R1", "S": "R1", "T": "-4" },
+    { "D": "BNEZ", "R": "R1", "S": "FIM", "T": "" },
+    { "D": "SUBD", "R": "F0", "S": "F2", "T": "F4" },
+    { "D": "SD", "R": "F0", "S": "8", "T": "R3" }
+  ]
 }
